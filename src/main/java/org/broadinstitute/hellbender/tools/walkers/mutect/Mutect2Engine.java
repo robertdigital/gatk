@@ -402,7 +402,7 @@ public final class Mutect2Engine implements AssemblyRegionEvaluator {
             return new ActivityProfileState(refInterval, 0.0);
         }
 
-        return new ActivityProfileState( refInterval, 1.0, ActivityProfileState.Type.NONE, null);
+        return new ActivityProfileState( refInterval, 1.0, ActivityProfileState.Type.NONE);
     }
 
     // NOTE: this is a hack to get around an htsjdk bug: https://github.com/samtools/htsjdk/issues/1228

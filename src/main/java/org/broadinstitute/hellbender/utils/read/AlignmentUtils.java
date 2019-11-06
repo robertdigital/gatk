@@ -473,48 +473,6 @@ public final class AlignmentUtils {
         return n;
     }
 
-    /**
-     * Calculate the number of bases that are soft clipped in read with quality score greater than threshold
-     *
-     * Handles the case where the cigar is null (i.e., the read is unmapped), returning 0
-     *
-     * @param read a non-null read.
-     * @param qualThreshold consider bases with quals > this value as high quality.  Must be >= 0
-     * @return positive integer
-     */
-    public static int calcNumHighQualitySoftClips( final GATKRead read, final byte qualThreshold ) {
-        if ( read == null ) throw new IllegalArgumentException("Read cannot be null");
-        if ( qualThreshold < 0 ) throw new IllegalArgumentException("Expected qualThreshold to be a positive byte but saw " + qualThreshold);
-
-        if ( read.getCigar() == null ) // the read is unmapped
-            return 0;
-
-        final byte[] qual = read.getBaseQualities();
-
-        int numHQSoftClips = 0;
-        int alignPos = 0;
-        for ( final CigarElement ce : read.getCigarElements() ) {
-            final int elementLength = ce.getLength();
-
-            switch( ce.getOperator() ) {
-                case S:
-                    for( int jjj = 0; jjj < elementLength; jjj++ ) {
-                        if( qual[alignPos++] > qualThreshold ) { numHQSoftClips++; }
-                    }
-                    break;
-                case M: case I: case EQ: case X:
-                    alignPos += elementLength;
-                    break;
-                case H: case P: case D: case N:
-                    break;
-                default:
-                    throw new IllegalStateException("Unsupported cigar operator: " + ce.getOperator());
-            }
-        }
-
-        return numHQSoftClips;
-    }
-
     public static int calcAlignmentByteArrayOffset(final Cigar cigar, final PileupElement pileupElement, final int alignmentStart, final int refLocus) {
         return calcAlignmentByteArrayOffset( cigar, pileupElement.getOffset(), pileupElement.isDeletion(), alignmentStart, refLocus );
     }

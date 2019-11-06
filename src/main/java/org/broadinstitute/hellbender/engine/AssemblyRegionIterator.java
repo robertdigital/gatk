@@ -8,7 +8,6 @@ import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
 import org.broadinstitute.hellbender.utils.activityprofile.ActivityProfile;
 import org.broadinstitute.hellbender.utils.activityprofile.ActivityProfileState;
-import org.broadinstitute.hellbender.utils.activityprofile.BandPassActivityProfile;
 import org.broadinstitute.hellbender.utils.downsampling.DownsamplingMethod;
 import org.broadinstitute.hellbender.utils.iterators.IntervalLocusIterator;
 import org.broadinstitute.hellbender.utils.iterators.ReadCachingIterator;
@@ -32,9 +31,6 @@ import java.util.*;
  * and malformed reads must be filtered out).
  */
 public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
-    private static final Logger logger = LogManager.getLogger(AssemblyRegionIterator.class);
-
-    private final MultiIntervalShard<GATKRead> readShard;
     private final SAMFileHeader readHeader;
     private final ReferenceDataSource reference;
     private final FeatureManager features;
@@ -42,8 +38,6 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
     private final int minRegionSize;
     private final int maxRegionSize;
     private final int assemblyRegionPadding;
-    private final double activeProbThreshold;
-    private final int maxProbPropagationDistance;
     
     private AssemblyRegion readyRegion;
     private Queue<AssemblyRegion> pendingRegions;
@@ -92,7 +86,6 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
         Utils.validateArg(activeProbThreshold >= 0.0, "activeProbThreshold must be >= 0.0");
         Utils.validateArg(maxProbPropagationDistance >= 0, "maxProbPropagationDistance must be >= 0");
 
-        this.readShard = readShard;
         this.readHeader = readHeader;
         this.reference = reference;
         this.features = features;
@@ -100,15 +93,13 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
         this.minRegionSize = minRegionSize;
         this.maxRegionSize = maxRegionSize;
         this.assemblyRegionPadding = assemblyRegionPadding;
-        this.activeProbThreshold = activeProbThreshold;
-        this.maxProbPropagationDistance = maxProbPropagationDistance;
 
         this.readyRegion = null;
         this.previousRegionReads = null;
         this.pendingRegions = new ArrayDeque<>();
         this.readCachingIterator = new ReadCachingIterator(readShard.iterator());
         this.readCache = new ArrayDeque<>();
-        this.activityProfile = new BandPassActivityProfile(null, maxProbPropagationDistance, activeProbThreshold, BandPassActivityProfile.MAX_FILTER_SIZE, BandPassActivityProfile.DEFAULT_SIGMA, readHeader);
+        this.activityProfile = new ActivityProfile(maxProbPropagationDistance, activeProbThreshold, readHeader);
 
         // We wrap our LocusIteratorByState inside an IntervalAlignmentContextIterator so that we get empty loci
         // for uncovered locations. This is critical for reproducing GATK 3.x behavior!

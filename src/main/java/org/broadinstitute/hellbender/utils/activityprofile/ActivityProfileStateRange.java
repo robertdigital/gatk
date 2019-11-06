@@ -19,7 +19,6 @@ public class ActivityProfileStateRange {
     private final SimpleInterval interval;
     private final double[] activeProb;
     private final ActivityProfileState.Type[] resultState;
-    private final double[] resultValue; // don't store as a Number since it uses more memory
 
     public ActivityProfileStateRange(MultiIntervalShard<?> shard, Iterator<ActivityProfileState> activityProfileStateIterator) {
         List<SimpleInterval> intervals = shard.getIntervals();
@@ -27,7 +26,6 @@ public class ActivityProfileStateRange {
         int size = interval.size();
         this.activeProb = new double[size];
         this.resultState = new ActivityProfileState.Type[size];
-        this.resultValue = new double[size];
 
         int i = 0;
         ActivityProfileState prev = null;
@@ -37,10 +35,8 @@ public class ActivityProfileStateRange {
                 Utils.validate(next.getLoc().getContig().equals(prev.getLoc().getContig()), "Contigs differ");
                 Utils.validate(next.getLoc().getStart() == prev.getLoc().getStart() + 1, "Out of order");
             }
-            activeProb[i] = next.isActiveProb();
-            resultState[i] = next.getResultState();
-            // store null result value as a negative number, since negative numbers are illegal in ActivityProfileState
-            resultValue[i] = next.getResultValue() == null ? Double.NEGATIVE_INFINITY : next.getResultValue().doubleValue();
+            activeProb[i] = next.getActiveProb();
+            resultState[i] = next.getType();
             i++;
             prev = next;
         }
@@ -60,8 +56,7 @@ public class ActivityProfileStateRange {
                     return endOfData();
                 }
                 int pos = interval.getStart() + i;
-                double v = resultValue[i];
-                ActivityProfileState state = new ActivityProfileState(new SimpleInterval(interval.getContig(), pos, pos), activeProb[i], resultState[i], v == Double.NEGATIVE_INFINITY ? null : v);
+                ActivityProfileState state = new ActivityProfileState(new SimpleInterval(interval.getContig(), pos, pos), activeProb[i], resultState[i]);
                 i++;
                 return state;
             }

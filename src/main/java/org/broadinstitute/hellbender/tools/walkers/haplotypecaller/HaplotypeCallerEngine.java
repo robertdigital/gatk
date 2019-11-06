@@ -23,7 +23,6 @@ import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.walkers.annotator.*;
 import org.broadinstitute.hellbender.tools.walkers.genotyper.*;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.readthreading.ReadThreadingAssembler;
-import org.broadinstitute.hellbender.utils.MathUtils;
 import org.broadinstitute.hellbender.utils.QualityUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
@@ -442,9 +441,7 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
     /**
      * Given a pileup, returns an ActivityProfileState containing the probability (0.0 to 1.0) that it's an "active" site.
      *
-     * Note that the current implementation will always return either 1.0 or 0.0, as it relies on the smoothing in
-     * {@link org.broadinstitute.hellbender.utils.activityprofile.BandPassActivityProfile} to create the full distribution
-     * of probabilities. This is consistent with GATK 3.
+     * Note that the current implementation will always return either 1.0 or 0.0.
      *
      * @param context reads pileup to examine
      * @param ref reference base overlapping the pileup locus
@@ -474,7 +471,6 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
         }
 
         final GenotypesContext genotypes = GenotypesContext.create(splitContexts.keySet().size());
-        final MathUtils.RunningAverage averageHQSoftClips = new MathUtils.RunningAverage();
         for( final Map.Entry<String, AlignmentContext> sample : splitContexts.entrySet() ) {
             // The ploidy here is not dictated by the sample but by the simple genotyping-engine used to determine whether regions are active or not.
             final int activeRegionDetectionHackishSamplePloidy = activeRegionEvaluationGenotyperEngine.getConfiguration().genotypeArgs.samplePloidy;
@@ -482,7 +478,7 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
                     activeRegionDetectionHackishSamplePloidy,
                     sample.getValue().getBasePileup(), ref.getBase(),
                     hcArgs.minBaseQualityScore,
-                    averageHQSoftClips, false)).genotypeLikelihoods;
+                    false)).genotypeLikelihoods;
             genotypes.add( new GenotypeBuilder(sample.getKey()).alleles(noCall).PL(genotypeLikelihoods).make() );
         }
 
@@ -498,7 +494,7 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
             final VariantContext vcOut = activeRegionEvaluationGenotyperEngine.calculateGenotypes(new VariantContextBuilder("HCisActive!", context.getContig(), context.getLocation().getStart(), context.getLocation().getEnd(), alleles).genotypes(genotypes).make(), GenotypeLikelihoodsCalculationModel.SNP);
             isActiveProb = vcOut == null ? 0.0 : QualityUtils.qualToProb(vcOut.getPhredScaledQual());
         }
-        return new ActivityProfileState(ref.getInterval(), isActiveProb, averageHQSoftClips.mean() > AVERAGE_HQ_SOFTCLIPS_HQ_BASES_THRESHOLD ? ActivityProfileState.Type.HIGH_QUALITY_SOFT_CLIPS : ActivityProfileState.Type.NONE, averageHQSoftClips.mean() );
+        return new ActivityProfileState(ref.getInterval(), isActiveProb, ActivityProfileState.Type.NONE);
     }
 
     /**

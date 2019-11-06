@@ -46,7 +46,6 @@ public class SomaticReferenceConfidenceModel extends ReferenceConfidenceModel {
          * @param pileup the read backed pileup containing the data we want to evaluate
          * @param refBase the reference base at this pileup position
          * @param minBaseQual the min base quality for a read in the pileup at the pileup position to be included in the calculation
-         * @param hqSoftClips running average data structure (can be null) to collect information about the number of high quality soft clips
          * @return a RefVsAnyResult genotype call.
          */
     @Override
@@ -54,7 +53,6 @@ public class SomaticReferenceConfidenceModel extends ReferenceConfidenceModel {
                                                                        final ReadPileup pileup,
                                                                        final byte refBase,
                                                                        final byte minBaseQual,
-                                                                       final MathUtils.RunningAverage hqSoftClips,
                                                                        final boolean readsWereRealigned) {
 
         final SomaticRefVsAnyResult result = new SomaticRefVsAnyResult();

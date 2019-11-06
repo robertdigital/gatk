@@ -13,21 +13,14 @@ import java.util.*;
  */
 public class ActivityProfile {
     protected final List<ActivityProfileState> stateList;
-    protected final Set<SimpleInterval> restrictToIntervals;
 
-    protected final int maxProbPropagationDistance;
-    protected final double activeProbThreshold;
+    private final int maxProbPropagationDistance;
+    private final double activeProbThreshold;
 
     protected SimpleInterval regionStartLoc = null;
-    protected SimpleInterval regionStopLoc = null;
+    private SimpleInterval regionStopLoc = null;
 
-    protected SAMFileHeader samHeader;
-
-    /**
-     * A cached value of the regionStartLoc contig length, to make calls to
-     * getCurrentContigLength efficient
-     */
-    protected int contigLength = -1;
+    private SAMFileHeader samHeader;
 
     /**
      * Create a new empty ActivityProfile
@@ -35,18 +28,7 @@ public class ActivityProfile {
      * @param activeProbThreshold threshold for the probability of an activity profile state being active
      */
     public ActivityProfile(final int maxProbPropagationDistance, final double activeProbThreshold, final SAMFileHeader header) {
-        this(maxProbPropagationDistance, activeProbThreshold, null, header);
-    }
-
-    /**
-     * Create a empty ActivityProfile, restricting output to profiles overlapping intervals, if not null
-     * @param maxProbPropagationDistance region probability propagation distance beyond its maximum size
-     * @param activeProbThreshold threshold for the probability of a profile state being active
-     * @param intervals only include states that are within these intervals, if not null
-     */
-    public ActivityProfile(final int maxProbPropagationDistance, final double activeProbThreshold, final Set<SimpleInterval> intervals, final SAMFileHeader header) {
-        this.stateList = new ArrayList<>();
-        this.restrictToIntervals = intervals;
+        stateList = new ArrayList<>();
         this.maxProbPropagationDistance = maxProbPropagationDistance;
         this.activeProbThreshold = activeProbThreshold;
         this.samHeader = header;
@@ -54,10 +36,7 @@ public class ActivityProfile {
 
     @Override
     public String toString() {
-        return "ActivityProfile{" +
-                "start=" + regionStartLoc +
-                ", stop=" + regionStopLoc +
-                '}';
+        return String.format("ActivityProfile{start=%s, stop=%s}", regionStartLoc, regionStopLoc);
     }
 
     /**
@@ -98,60 +77,8 @@ public class ActivityProfile {
         return isEmpty() ? null : regionStartLoc.spanWith(regionStopLoc);
     }
 
-    public String getContig() {
-        return regionStartLoc.getContig();
-    }
-
     public int getEnd() {
         return regionStopLoc.getEnd();
-    }
-
-    /**
-     * Get the list of activity profile results in this object
-     * @return a non-null, ordered list of activity profile results
-     */
-    protected List<ActivityProfileState> getStateList() {
-        return stateList;
-    }
-
-    /**
-     * Get the probabilities of the states as a single linear array of doubles
-     * @return a non-null array
-     */
-    protected double[] getProbabilitiesAsArray() {
-        final double[] probs = new double[getStateList().size()];
-        int i = 0;
-        for ( final ActivityProfileState state : getStateList() ) {
-            probs[i++] = state.isActiveProb();
-        }
-        return probs;
-    }
-
-    /**
-     * Helper function that gets the interval for a site offset from relativeLoc, protecting ourselves from
-     * falling off the edge of the contig.
-     *
-     * @param relativeLoc the location offset is relative to
-     * @param offset the offset from relativeLoc where we'd like to create a GenomeLoc
-     * @return a SimpleInterval with relativeLoc.start + offset, if this is on the contig, null otherwise
-     */
-    protected SimpleInterval getLocForOffset(final SimpleInterval relativeLoc, final int offset) {
-        Utils.nonNull(relativeLoc);
-
-        final int start = relativeLoc.getStart() + offset;
-        if ( start < 1 || start > getCurrentContigLength() ) {
-            return null;
-        } else {
-            return new SimpleInterval(regionStartLoc.getContig(), start, start);
-        }
-    }
-
-    /**
-     * Get the length of the current contig
-     * @return the length in bp
-     */
-    private int getCurrentContigLength() {
-        return contigLength;
     }
 
     // --------------------------------------------------------------------------------
@@ -174,80 +101,13 @@ public class ActivityProfile {
         if ( regionStartLoc == null ) {
             regionStartLoc = loc;
             regionStopLoc = loc;
-            contigLength = samHeader.getSequence(regionStartLoc.getContig()).getSequenceLength();
         } else {
             Utils.validateArg( regionStopLoc.getStart() == loc.getStart() - 1, () ->
                     "Bad add call to ActivityProfile: loc " + loc + " not immediately after last loc " + regionStopLoc);
             regionStopLoc = loc;
         }
 
-        final Collection<ActivityProfileState> processedStates = processState(state);
-        for ( final ActivityProfileState processedState : processedStates ) {
-            incorporateSingleState(processedState);
-        }
-    }
-
-    /**
-     * Incorporate a single activity profile state into the current list of states
-     *
-     * If state's position occurs immediately after the last position in this profile, then
-     * the state is appended to the state list.  If it's within the existing states list,
-     * the prob of stateToAdd is added to its corresponding state in the list.  If the
-     * position would be before the start of this profile, stateToAdd is simply ignored.
-     *
-     * @param stateToAdd the state we want to add to the states list
-     */
-    private void incorporateSingleState(final ActivityProfileState stateToAdd) {
-        Utils.nonNull(stateToAdd);
-        final int position = stateToAdd.getOffset(regionStartLoc);
-        // should we allow this?  probably not
-        Utils.validateArg(position <= size(), () -> "Must add state contiguous to existing states: adding " + stateToAdd);
-
-        if ( position >= 0 ) {
-            // ignore states starting before this region's start
-            if ( position < size() ) {
-                stateList.get(position).setIsActiveProb(stateList.get(position).isActiveProb() + stateToAdd.isActiveProb());
-            } else {
-                Utils.validateArg(position == size(), "position == size but it wasn't");
-                stateList.add(stateToAdd);
-            }
-        }
-    }
-
-    /**
-     * Process justAddedState, returning a collection of derived states that actually be added to the stateList
-     *
-     * The purpose of this function is to transform justAddedStates, if needed, into a series of atomic states
-     * that we actually want to track.  For example, if state is for soft clips, we transform that single
-     * state into a list of states that surround the state up to the distance of the soft clip.
-     *
-     * Can be overridden by subclasses to transform states in any way
-     *
-     * There's no particular contract for the output states, except that they can never refer to states
-     * beyond the current end of the stateList unless the explicitly include preceding states before
-     * the reference.  So for example if the current state list is [1, 2, 3] this function could return
-     * [1,2,3,4,5] but not [1,2,3,5].
-     *
-     * @param justAddedState the state our client provided to use to add to the list
-     * @return a list of derived states that should actually be added to this profile's state list
-     */
-    protected Collection<ActivityProfileState> processState(final ActivityProfileState justAddedState) {
-        if ( justAddedState.getResultState().equals(ActivityProfileState.Type.HIGH_QUALITY_SOFT_CLIPS) ) {
-            // special code to deal with the problem that high quality soft clipped bases aren't added to pileups
-            final List<ActivityProfileState> states = new ArrayList<>();
-            // add no more than the max prob propagation distance num HQ clips
-            final int numHQClips = Math.min(justAddedState.getResultValue().intValue(), getMaxProbPropagationDistance());
-            for( int i = - numHQClips; i <= numHQClips; i++ ) {
-                final SimpleInterval loc = getLocForOffset(justAddedState.getLoc(), i);
-                if ( loc != null ) {
-                    states.add(new ActivityProfileState(loc, justAddedState.isActiveProb()));
-                }
-            }
-
-            return states;
-        } else {
-            return Collections.singletonList(justAddedState);
-        }
+        stateList.add(state);
     }
 
     // --------------------------------------------------------------------------------
@@ -291,12 +151,7 @@ public class ActivityProfile {
                 return regions;
             }
             else {
-                if ( restrictToIntervals == null ) {
-                    regions.add(nextRegion);
-                }
-                else {
-                    regions.addAll(nextRegion.splitAndTrimToIntervals(restrictToIntervals));
-                }
+                regions.add(nextRegion);
             }
         }
     }
@@ -328,7 +183,7 @@ public class ActivityProfile {
         }
 
         final ActivityProfileState first = stateList.get(0);
-        final boolean isActiveRegion = first.isActiveProb() > activeProbThreshold;
+        final boolean isActiveRegion = first.getActiveProb() > activeProbThreshold;
         final int offsetOfNextRegionEnd = findEndOfRegion(isActiveRegion, minRegionSize, maxRegionSize, forceConversion);
         if ( offsetOfNextRegionEnd == -1 ) {
             // couldn't find a valid ending offset, so we return null
@@ -455,7 +310,7 @@ public class ActivityProfile {
     private double getProb(final int index) {
         Utils.validIndex(index, stateList.size());
 
-        return stateList.get(index).isActiveProb();
+        return stateList.get(index).getActiveProb();
     }
 
     /**

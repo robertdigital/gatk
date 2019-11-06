@@ -296,32 +296,6 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
         return tests.toArray(new Object[][]{});
     }
 
-    @Test(dataProvider = "SplitAssemblyRegion")
-    public void testSplitAssemblyRegion(final SimpleInterval regionLoc, final List<SimpleInterval> intervalLocs, final List<SimpleInterval> expectedRegionLocs) {
-        for ( final boolean addSubstates : Arrays.asList(true, false) ) {
-            final List<ActivityProfileState> states;
-            if ( addSubstates ) {
-                states = new LinkedList<>();
-                for ( int i = 0; i < regionLoc.size(); i++ )
-                    states.add(new ActivityProfileState(new SimpleInterval(regionLoc.getContig(), regionLoc.getStart() + i, regionLoc.getStart() + i), 1.0));
-            } else {
-                states = null;
-            }
-
-            final AssemblyRegion region = new AssemblyRegion(regionLoc, states, true, 0, header);
-            final List<AssemblyRegion> regions = region.splitAndTrimToIntervals(new LinkedHashSet<>(intervalLocs));
-
-            Assert.assertEquals(regions.size(), expectedRegionLocs.size(), "Wrong number of split locations");
-            for ( int i = 0; i < expectedRegionLocs.size(); i++ ) {
-                final SimpleInterval expected = expectedRegionLocs.get(i);
-                final AssemblyRegion actual = regions.get(i);
-                Assert.assertEquals(actual.getSpan(), expected, "Bad region after split");
-                Assert.assertEquals(actual.isActive(), region.isActive());
-                Assert.assertEquals(actual.getExtension(), region.getExtension());
-            }
-        }
-    }
-
     // -----------------------------------------------------------------------------------------------
     //
     // Make sure we can properly cut up an assembly region based on engine intervals

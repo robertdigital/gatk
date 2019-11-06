@@ -59,12 +59,6 @@ public class ReferenceConfidenceModel {
      */
     private static final byte BASE_QUAL_THRESHOLD = 6;
 
-    /**
-     * Only base calls with quality strictly greater than this constant,
-     * will be considered high quality if they are part of a soft-clip.
-     */
-    private static final byte HQ_BASE_QUALITY_SOFTCLIP_THRESHOLD = 28;
-
     //TODO change this: https://github.com/broadinstitute/gsa-unstable/issues/1108
     protected static final int MAX_N_INDEL_INFORMATIVE_READS = 40; // more than this is overkill because GQs are capped at 99 anyway
 
@@ -240,7 +234,7 @@ public class ReferenceConfidenceModel {
         // Assume infinite population on a single sample.
         final int refOffset = offset + globalRefOffset;
         final byte refBase = ref[refOffset];
-        final ReferenceConfidenceResult homRefCalc = calcGenotypeLikelihoodsOfRefVsAny(ploidy, pileup, refBase, BASE_QUAL_THRESHOLD, null, true);
+        final ReferenceConfidenceResult homRefCalc = calcGenotypeLikelihoodsOfRefVsAny(ploidy, pileup, refBase, BASE_QUAL_THRESHOLD, true);
 
         final Allele refAllele = Allele.create(refBase, true);
         final List<Allele> refSiteAlleles = Arrays.asList(refAllele, Allele.NON_REF_ALLELE);
@@ -356,15 +350,13 @@ public class ReferenceConfidenceModel {
      * @param pileup the read backed pileup containing the data we want to evaluate
      * @param refBase the reference base at this pileup position
      * @param minBaseQual the min base quality for a read in the pileup at the pileup position to be included in the calculation
-     * @param hqSoftClips running average data structure (can be null) to collect information about the number of high quality soft clips
      * @return a RefVsAnyResult genotype call.
      */
     public ReferenceConfidenceResult calcGenotypeLikelihoodsOfRefVsAny(final int ploidy,
-                                                        final ReadPileup pileup,
-                                                        final byte refBase,
-                                                        final byte minBaseQual,
-                                                        final MathUtils.RunningAverage hqSoftClips,
-                                                            final boolean readsWereRealigned) {
+                                                                       final ReadPileup pileup,
+                                                                       final byte refBase,
+                                                                       final byte minBaseQual,
+                                                                       final boolean readsWereRealigned) {
 
         final int likelihoodCount = ploidy + 1;
         final double log10Ploidy = MathUtils.log10(ploidy);
@@ -377,7 +369,7 @@ public class ReferenceConfidenceModel {
                 continue;
             }
             readCount++;
-            applyPileupElementRefVsNonRefLikelihoodAndCount(refBase, likelihoodCount, log10Ploidy, result, p, qual, hqSoftClips, readsWereRealigned);
+            applyPileupElementRefVsNonRefLikelihoodAndCount(refBase, likelihoodCount, log10Ploidy, result, p, qual, readsWereRealigned);
         }
         final double denominator = readCount * log10Ploidy;
         for (int i = 0; i < likelihoodCount; i++) {
@@ -386,7 +378,7 @@ public class ReferenceConfidenceModel {
         return result;
     }
 
-    private void applyPileupElementRefVsNonRefLikelihoodAndCount(final byte refBase, final int likelihoodCount, final double log10Ploidy, final RefVsAnyResult result, final PileupElement element, final byte qual, final MathUtils.RunningAverage hqSoftClips, final boolean readsWereRealigned) {
+    private void applyPileupElementRefVsNonRefLikelihoodAndCount(final byte refBase, final int likelihoodCount, final double log10Ploidy, final RefVsAnyResult result, final PileupElement element, final byte qual, final boolean readsWereRealigned) {
         final boolean isAlt = readsWereRealigned ? isAltAfterAssembly(element, refBase) : isAltBeforeAssembly(element, refBase);
         final double referenceLikelihood;
         final double nonRefLikelihood;
@@ -408,9 +400,6 @@ public class ReferenceConfidenceModel {
                     MathUtils.approximateLog10SumLog10(
                             referenceLikelihood + MathUtils.log10(j),
                             nonRefLikelihood + MathUtils.log10(i));
-        }
-        if (isAlt && hqSoftClips != null && element.isNextToSoftClip()) {
-            hqSoftClips.add(AlignmentUtils.calcNumHighQualitySoftClips(element.getRead(), HQ_BASE_QUALITY_SOFTCLIP_THRESHOLD));
         }
     }
 

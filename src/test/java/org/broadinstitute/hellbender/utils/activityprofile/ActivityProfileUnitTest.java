@@ -62,9 +62,6 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
         public ActivityProfile makeProfile() {
             switch ( type ) {
                 case Base: return new ActivityProfile(MAX_PROB_PROPAGATION_DISTANCE, ACTIVE_PROB_THRESHOLD, header);
-                case BandPass:
-                    // zero size => equivalent to ActivityProfile
-                    return new BandPassActivityProfile(null, MAX_PROB_PROPAGATION_DISTANCE, ACTIVE_PROB_THRESHOLD, 0, 0.01, false, header);
                 default: throw new IllegalStateException(type.toString());
             }
         }
@@ -84,7 +81,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
     }
 
     private enum ProfileType {
-        Base, BandPass
+        Base
     }
 
     @DataProvider(name = "BasicActivityProfileTestProvider")
@@ -124,7 +121,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
     private void assertProbsAreEqual(List<ActivityProfileState> actual, List<Double> expected) {
         Assert.assertEquals(actual.size(), expected.size());
         for ( int i = 0; i < actual.size(); i++ ) {
-            Assert.assertEquals(actual.get(i).isActiveProb(), expected.get(i));
+            Assert.assertEquals(actual.get(i).getActiveProb(), expected.get(i));
         }
     }
 
@@ -253,65 +250,6 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
         }
 
         return lastRegion;
-    }
-
-    // -------------------------------------------------------------------------------------
-    //
-    // Hardcore tests for adding to the profile and constructing active regions
-    //
-    // -------------------------------------------------------------------------------------
-
-    @DataProvider(name = "SoftClipsTest")
-    public Object[][] makeSoftClipsTest() {
-        final List<Object[]> tests = new LinkedList<Object[]>();
-
-        final int contigLength = genomeLocParser.getSequenceDictionary().getSequences().get(0).getSequenceLength();
-        for ( int start : Arrays.asList(1, 10, 100, contigLength - 100, contigLength - 10, contigLength - 1) ) {
-            for ( int precedingSites: Arrays.asList(0, 1, 10) ) {
-                if ( precedingSites + start < contigLength ) {
-                    for ( int softClipSize : Arrays.asList(1, 2, 10, 100) ) {
-//        for ( int start : Arrays.asList(10) ) {
-//            for ( int precedingSites: Arrays.asList(10) ) {
-//                for ( int softClipSize : Arrays.asList(1) ) {
-                        tests.add(new Object[]{ start, precedingSites, softClipSize });
-                    }
-                }
-            }
-        }
-
-        return tests.toArray(new Object[][]{});
-    }
-
-    @Test(dataProvider = "SoftClipsTest")
-    public void testSoftClips(final int start, int nPrecedingSites, final int softClipSize) {
-        final ActivityProfile profile = new ActivityProfile(MAX_PROB_PROPAGATION_DISTANCE, ACTIVE_PROB_THRESHOLD, header);
-
-        final int contigLength = genomeLocParser.getSequenceDictionary().getSequences().get(0).getSequenceLength();
-        final String contig = genomeLocParser.getSequenceDictionary().getSequences().get(0).getSequenceName();
-        for ( int i = 0; i < nPrecedingSites; i++ ) {
-            final GenomeLoc loc = genomeLocParser.createGenomeLoc(contig, i + start);
-            final ActivityProfileState state = new ActivityProfileState(new SimpleInterval(loc), 0.0);
-            profile.add(state);
-        }
-
-        final GenomeLoc softClipLoc = genomeLocParser.createGenomeLoc(contig, nPrecedingSites + start);
-        profile.add(new ActivityProfileState(new SimpleInterval(softClipLoc), 1.0, ActivityProfileState.Type.HIGH_QUALITY_SOFT_CLIPS, softClipSize));
-
-        final int actualNumOfSoftClips = Math.min(softClipSize, profile.getMaxProbPropagationDistance());
-        if ( nPrecedingSites == 0 ) {
-            final int profileSize = Math.min(start + actualNumOfSoftClips, contigLength) - start + 1;
-            Assert.assertEquals(profile.size(), profileSize, "Wrong number of states in the profile");
-        }
-
-        for ( int i = 0; i < profile.size(); i++ ) {
-            final ActivityProfileState state = profile.getStateList().get(i);
-            final boolean withinSCRange = genomeLocParser.createGenomeLoc(state.getLoc()).distance(softClipLoc) <= actualNumOfSoftClips;
-            if ( withinSCRange ) {
-                Assert.assertTrue(state.isActiveProb() > 0.0, "active prob should be changed within soft clip size");
-            } else {
-                Assert.assertEquals(state.isActiveProb(), 0.0, "active prob shouldn't be changed outside of clip size");
-            }
-        }
     }
 
     // -------------------------------------------------------------------------------------

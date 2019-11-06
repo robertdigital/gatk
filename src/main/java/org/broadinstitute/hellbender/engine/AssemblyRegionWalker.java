@@ -328,7 +328,7 @@ public abstract class AssemblyRegionWalker extends WalkerBase {
     private void writeActivityProfile(final List<ActivityProfileState> states) {
         if ( activityProfileOutStream != null ) {
             for ( final ActivityProfileState state : states ) {
-                IGVUtils.printIGVFormatRow(activityProfileOutStream, state.getLoc(), "state", Math.min(state.isActiveProb(), 1.0));
+                IGVUtils.printIGVFormatRow(activityProfileOutStream, state.getLoc(), "state", Math.min(state.getActiveProb(), 1.0));
             }
         }
     }
