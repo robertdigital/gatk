@@ -1,8 +1,6 @@
 package org.broadinstitute.hellbender.engine;
 
 import htsjdk.samtools.SAMFileHeader;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.broadinstitute.hellbender.utils.IntervalUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
@@ -50,8 +48,7 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
 
     /**
      * Constructs an AssemblyRegionIterator over a provided read shard
-     *
-     * @param readShard MultiIntervalShard containing the reads that will go into the assembly regions.
+     *  @param readShard MultiIntervalShard containing the reads that will go into the assembly regions.
      *                  Must have a MAPPED filter set on it.
      * @param readHeader header for the reads
      * @param reference source of reference bases (may be null)
@@ -61,8 +58,6 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
      * @param maxRegionSize maximum size of an assembly region
      * @param assemblyRegionPadding number of bases of padding on either side of an assembly region
      * @param activeProbThreshold minimum probability for a locus to be considered active
-     * @param maxProbPropagationDistance upper limit on how many bases away probability mass can be moved around
-     *                                   when calculating the boundaries between active and inactive assembly regions
      */
     public AssemblyRegionIterator(final MultiIntervalShard<GATKRead> readShard,
                                   final SAMFileHeader readHeader,
@@ -73,7 +68,6 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
                                   final int maxRegionSize,
                                   final int assemblyRegionPadding,
                                   final double activeProbThreshold,
-                                  final int maxProbPropagationDistance,
                                   final boolean includeReadsWithDeletionsInIsActivePileups) {
 
         Utils.nonNull(readShard);
@@ -84,7 +78,6 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
         Utils.validateArg(minRegionSize <= maxRegionSize, "minRegionSize must be <= maxRegionSize");
         Utils.validateArg(assemblyRegionPadding >= 0, "assemblyRegionPadding must be >= 0");
         Utils.validateArg(activeProbThreshold >= 0.0, "activeProbThreshold must be >= 0.0");
-        Utils.validateArg(maxProbPropagationDistance >= 0, "maxProbPropagationDistance must be >= 0");
 
         this.readHeader = readHeader;
         this.reference = reference;
@@ -99,7 +92,7 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
         this.pendingRegions = new ArrayDeque<>();
         this.readCachingIterator = new ReadCachingIterator(readShard.iterator());
         this.readCache = new ArrayDeque<>();
-        this.activityProfile = new ActivityProfile(maxProbPropagationDistance, activeProbThreshold, readHeader);
+        this.activityProfile = new ActivityProfile(activeProbThreshold, readHeader);
 
         // We wrap our LocusIteratorByState inside an IntervalAlignmentContextIterator so that we get empty loci
         // for uncovered locations. This is critical for reproducing GATK 3.x behavior!

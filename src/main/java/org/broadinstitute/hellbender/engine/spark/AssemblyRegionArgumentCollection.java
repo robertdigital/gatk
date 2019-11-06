@@ -25,10 +25,6 @@ public abstract class AssemblyRegionArgumentCollection implements Serializable {
     @Argument(fullName = AssemblyRegionWalker.THRESHOLD_LONG_NAME, doc="Minimum probability for a locus to be considered active.", optional = true)
     public double activeProbThreshold = defaultActiveProbThreshold();
 
-    @Advanced
-    @Argument(fullName = AssemblyRegionWalker.PROPAGATION_LONG_NAME, doc="Upper limit on how many bases away probability mass can be moved around when calculating the boundaries between active and inactive assembly regions", optional = true)
-    public int maxProbPropagationDistance = defaultMaxProbPropagationDistance();
-
     /**
      * @return Default value for the {@link #minAssemblyRegionSize} parameter, if none is provided on the command line
      */
@@ -54,8 +50,4 @@ public abstract class AssemblyRegionArgumentCollection implements Serializable {
      */
     protected abstract double defaultActiveProbThreshold();
 
-    /**
-     * @return Default value for the {@link #maxProbPropagationDistance} parameter, if none is provided on the command line
-     */
-    protected abstract int defaultMaxProbPropagationDistance();
 }

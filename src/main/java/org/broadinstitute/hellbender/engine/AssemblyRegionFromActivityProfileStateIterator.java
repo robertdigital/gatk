@@ -31,22 +31,18 @@ public class AssemblyRegionFromActivityProfileStateIterator implements Iterator<
 
     /**
      * Constructs an AssemblyRegionIterator over a provided read shard
-     *
-     * @param readHeader header for the reads
+     *  @param readHeader header for the reads
      * @param minRegionSize minimum size of an assembly region
      * @param maxRegionSize maximum size of an assembly region
      * @param assemblyRegionPadding number of bases of padding on either side of an assembly region
      * @param activeProbThreshold minimum probability for a locus to be considered active
-     * @param maxProbPropagationDistance upper limit on how many bases away probability mass can be moved around
-     *                                   when calculating the boundaries between active and inactive assembly regions
      */
     public AssemblyRegionFromActivityProfileStateIterator(final Iterator<ActivityProfileState> activityProfileStateIterator,
                                                           final SAMFileHeader readHeader,
                                                           final int minRegionSize,
                                                           final int maxRegionSize,
                                                           final int assemblyRegionPadding,
-                                                          final double activeProbThreshold,
-                                                          final int maxProbPropagationDistance) {
+                                                          final double activeProbThreshold) {
 
         Utils.nonNull(readHeader);
         Utils.validateArg(minRegionSize >= 1, "minRegionSize must be >= 1");
@@ -54,7 +50,6 @@ public class AssemblyRegionFromActivityProfileStateIterator implements Iterator<
         Utils.validateArg(minRegionSize <= maxRegionSize, "minRegionSize must be <= maxRegionSize");
         Utils.validateArg(assemblyRegionPadding >= 0, "assemblyRegionPadding must be >= 0");
         Utils.validateArg(activeProbThreshold >= 0.0, "activeProbThreshold must be >= 0.0");
-        Utils.validateArg(maxProbPropagationDistance >= 0, "maxProbPropagationDistance must be >= 0");
 
         this.activityProfileStateIterator = activityProfileStateIterator;
         this.readHeader = readHeader;
@@ -64,7 +59,7 @@ public class AssemblyRegionFromActivityProfileStateIterator implements Iterator<
 
         this.readyRegion = null;
         this.pendingRegions = new ArrayDeque<>();
-        this.activityProfile = new ActivityProfile(maxProbPropagationDistance, activeProbThreshold, readHeader);
+        this.activityProfile = new ActivityProfile(activeProbThreshold, readHeader);
 
         readyRegion = loadNextAssemblyRegion();
     }

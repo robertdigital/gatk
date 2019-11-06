@@ -20,7 +20,6 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
     private GenomeLoc startLoc;
     private SAMFileHeader header;
 
-    private final static int MAX_PROB_PROPAGATION_DISTANCE = 50;
     private final static double ACTIVE_PROB_THRESHOLD= 0.002;
 
     @BeforeClass
@@ -61,7 +60,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
 
         public ActivityProfile makeProfile() {
             switch ( type ) {
-                case Base: return new ActivityProfile(MAX_PROB_PROPAGATION_DISTANCE, ACTIVE_PROB_THRESHOLD, header);
+                case Base: return new ActivityProfile(ACTIVE_PROB_THRESHOLD, header);
                 default: throw new IllegalStateException(type.toString());
             }
         }
@@ -195,7 +194,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
 
     @Test(dataProvider = "RegionCreationTests")
     public void testRegionCreation(final int start, final List<Boolean> probs, int maxRegionSize, final int nParts, final boolean forceConversion, final boolean waitUntilEnd) {
-        final ActivityProfile profile = new ActivityProfile(MAX_PROB_PROPAGATION_DISTANCE, ACTIVE_PROB_THRESHOLD, header);
+        final ActivityProfile profile = new ActivityProfile(ACTIVE_PROB_THRESHOLD, header);
         Assert.assertNotNull(profile.toString());
 
         final String contig = genomeLocParser.getSequenceDictionary().getSequences().get(0).getSequenceName();
@@ -220,7 +219,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
         }
 
         for ( int i = 0; i < probs.size(); i++ ) {
-            if ( forceConversion || (i + maxRegionSize + profile.getMaxProbPropagationDistance() < probs.size()))
+            if ( forceConversion || (i + maxRegionSize  < probs.size()))
                 // only require a site to be seen if we are forcing conversion or the site is more than maxRegionSize from the end
                 Assert.assertTrue(seenSites.get(i), "Missed site " + i);
         }
@@ -375,10 +374,10 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
 
     @Test(dataProvider = "ActiveRegionCutTests")
     public void testActiveRegionCutTests(final int minRegionSize, final int maxRegionSize, final int expectedRegionSize, final List<Double> probs) {
-        final ActivityProfile profile = new ActivityProfile(MAX_PROB_PROPAGATION_DISTANCE, ACTIVE_PROB_THRESHOLD, header);
+        final ActivityProfile profile = new ActivityProfile(ACTIVE_PROB_THRESHOLD, header);
 
         final String contig = genomeLocParser.getSequenceDictionary().getSequences().get(0).getSequenceName();
-        for ( int i = 0; i <= maxRegionSize + profile.getMaxProbPropagationDistance(); i++ ) {
+        for ( int i = 0; i <= maxRegionSize; i++ ) {
             final GenomeLoc loc = genomeLocParser.createGenomeLoc(contig, i + 1);
             final double prob = i < probs.size() ? probs.get(i) : 0.0;
             final ActivityProfileState state = new ActivityProfileState(new SimpleInterval(loc), prob);

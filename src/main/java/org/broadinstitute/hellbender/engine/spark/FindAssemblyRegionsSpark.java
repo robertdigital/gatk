@@ -97,7 +97,7 @@ public class FindAssemblyRegionsSpark {
                                 header, reference, features, assemblyRegionEvaluator,
                                 assemblyRegionArgs.minAssemblyRegionSize, assemblyRegionArgs.maxAssemblyRegionSize,
                                 assemblyRegionArgs.assemblyRegionPadding, assemblyRegionArgs.activeProbThreshold,
-                                assemblyRegionArgs.maxProbPropagationDistance, includeReadsWithDeletionsInIsActivePileups);
+                                includeReadsWithDeletionsInIsActivePileups);
                         return Utils.stream(assemblyRegionIter).map(assemblyRegion ->
                                 new AssemblyRegionWalkerContext(assemblyRegion,
                                         new ReferenceContext(reference, assemblyRegion.getExtendedSpan()),
@@ -219,8 +219,8 @@ public class FindAssemblyRegionsSpark {
                                 assemblyRegionArgs.minAssemblyRegionSize,
                                 assemblyRegionArgs.maxAssemblyRegionSize,
                                 assemblyRegionArgs.assemblyRegionPadding,
-                                assemblyRegionArgs.activeProbThreshold,
-                                assemblyRegionArgs.maxProbPropagationDistance), new com.google.common.base.Function<AssemblyRegion, ReadlessAssemblyRegion>() {
+                                assemblyRegionArgs.activeProbThreshold
+                        ), new com.google.common.base.Function<AssemblyRegion, ReadlessAssemblyRegion>() {
                             @Nullable
                             @Override
                             public ReadlessAssemblyRegion apply(@Nullable AssemblyRegion input) {

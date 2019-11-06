@@ -72,7 +72,7 @@ public class AssemblyRegionIteratorUnitTest extends GATKBaseTest {
             final CountingReadFilter combinedReadFilter = CountingReadFilter.fromList(readFilters, readsSource.getHeader());
             readShard.setReadFilter(combinedReadFilter);
 
-            final AssemblyRegionIterator iter = new AssemblyRegionIterator(readShard, readsSource.getHeader(), refSource, null, evaluator, minRegionSize, maxRegionSize, assemblyRegionPadding, 0.002, 50, true);
+            final AssemblyRegionIterator iter = new AssemblyRegionIterator(readShard, readsSource.getHeader(), refSource, null, evaluator, minRegionSize, maxRegionSize, assemblyRegionPadding, 0.002, true);
 
             AssemblyRegion previousRegion = null;
             while ( iter.hasNext() ) {
@@ -189,7 +189,7 @@ public class AssemblyRegionIteratorUnitTest extends GATKBaseTest {
             final CountingReadFilter combinedReadFilter = CountingReadFilter.fromList(readFilters, readsSource.getHeader());
             readShard.setReadFilter(combinedReadFilter);
 
-            final AssemblyRegionIterator iter = new AssemblyRegionIterator(readShard, readsSource.getHeader(), refSource, null, evaluator, 50, 300, 50, 0.002, 50, includeReadsWithDeletionsInIsActivePileups);
+            final AssemblyRegionIterator iter = new AssemblyRegionIterator(readShard, readsSource.getHeader(), refSource, null, evaluator, 50, 300, 50, 0.002, includeReadsWithDeletionsInIsActivePileups);
 
             // Pull from the AssemblyRegionIterator to trigger the call into the FakeAssertingAssemblyRegionEvaluator,
             // which does the actual assert on the pileups passed to isActive()

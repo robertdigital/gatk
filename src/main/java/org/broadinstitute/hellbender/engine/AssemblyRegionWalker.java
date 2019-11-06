@@ -47,7 +47,6 @@ public abstract class AssemblyRegionWalker extends WalkerBase {
     public static final String ASSEMBLY_PADDING_LONG_NAME = "assembly-region-padding";
     public static final String MAX_STARTS_LONG_NAME = "max-reads-per-alignment-start";
     public static final String THRESHOLD_LONG_NAME = "active-probability-threshold";
-    public static final String PROPAGATION_LONG_NAME = "max-prob-propagation-distance";
     public static final String PROFILE_OUT_LONG_NAME = "activity-profile-out";
     public static final String ASSEMBLY_REGION_OUT_LONG_NAME = "assembly-region-out";
     public static final String FORCE_ACTIVE_REGIONS_LONG_NAME = "force-active";
@@ -70,10 +69,6 @@ public abstract class AssemblyRegionWalker extends WalkerBase {
     @Advanced
     @Argument(fullName = THRESHOLD_LONG_NAME, doc="Minimum probability for a locus to be considered active.", optional = true)
     protected double activeProbThreshold = defaultActiveProbThreshold();
-
-    @Advanced
-    @Argument(fullName = PROPAGATION_LONG_NAME, doc="Upper limit on how many bases away probability mass can be moved around when calculating the boundaries between active and inactive assembly regions", optional = true)
-    protected int maxProbPropagationDistance = defaultMaxProbPropagationDistance();
 
     @Advanced
     @Argument(fullName = FORCE_ACTIVE_REGIONS_LONG_NAME, doc = "If provided, all regions will be marked as active", optional = true)
@@ -129,11 +124,6 @@ public abstract class AssemblyRegionWalker extends WalkerBase {
      * @return Default value for the {@link #activeProbThreshold} parameter, if none is provided on the command line
      */
     protected abstract double defaultActiveProbThreshold();
-
-    /**
-     * @return Default value for the {@link #maxProbPropagationDistance} parameter, if none is provided on the command line
-     */
-    protected abstract int defaultMaxProbPropagationDistance();
 
     /**
      * @return If true, include reads with deletions at the current locus in the pileups passed to the AssemblyRegionEvaluator.
@@ -293,7 +283,7 @@ public abstract class AssemblyRegionWalker extends WalkerBase {
      * @param features FeatureManager
      */
     private void processReadShard(MultiIntervalLocalReadShard shard, ReferenceDataSource reference, FeatureManager features ) {
-        final Iterator<AssemblyRegion> assemblyRegionIter = new AssemblyRegionIterator(shard, getHeaderForReads(), reference, features, assemblyRegionEvaluator(), minAssemblyRegionSize, maxAssemblyRegionSize, assemblyRegionPadding, activeProbThreshold, maxProbPropagationDistance, includeReadsWithDeletionsInIsActivePileups());
+        final Iterator<AssemblyRegion> assemblyRegionIter = new AssemblyRegionIterator(shard, getHeaderForReads(), reference, features, assemblyRegionEvaluator(), minAssemblyRegionSize, maxAssemblyRegionSize, assemblyRegionPadding, activeProbThreshold, includeReadsWithDeletionsInIsActivePileups());
 
         // Call into the tool implementation to process each assembly region from this shard.
         while ( assemblyRegionIter.hasNext() ) {
