@@ -1624,7 +1624,7 @@ public final class FuncotatorUtils {
             // First a basic sanity check:
             if ( !exon.getContig().equals(reference.getWindow().getContig()) ) {
                 throw new GATKException("Cannot create a coding sequence! Contigs not the same - Ref: "
-                        + reference.getInterval().getContig() + ", Exon: " + exon.getContig());
+                        + reference.getContig() + ", Exon: " + exon.getContig());
             }
 
             if ( start > exon.getStart() ) { start = exon.getStart(); }
@@ -1633,7 +1633,7 @@ public final class FuncotatorUtils {
 
         // Get the window so we can convert to reference coordinates from genomic coordinates of the exons:
         final SimpleInterval refWindow = reference.getWindow();
-        final byte[] bases = reference.getBases(Math.abs(start - reference.getInterval().getStart()), Math.abs(reference.getInterval().getEnd() - end));
+        final byte[] bases = reference.getBases(Math.abs(start - reference.getStart()), Math.abs(reference.getEnd() - end));
 
         // If we're going in the opposite direction, we must reverse this reference base array
         // and complement it.

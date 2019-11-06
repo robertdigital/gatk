@@ -156,7 +156,7 @@ public final class CombineGVCFs extends MultiVariantWalkerGroupedOnStart {
             Locatable last = prevPos!=null && prevPos.getContig().equals(variantContextsOverlappingCurrentMerge.get(0).getContig()) ?  prevPos : variantContextsOverlappingCurrentMerge.get(0);
             // If on a different contig, close out all the queued states on the current contig
             int end = last.getContig().equals(referenceContext.getWindow().getContig())
-                    ? referenceContext.getInterval().getStart() - 1
+                    ? referenceContext.getStart() - 1
                     : variantContextsOverlappingCurrentMerge.stream().mapToInt(VariantContext::getEnd).max().getAsInt();
 
             createIntermediateVariants( new SimpleInterval(last.getContig(), last.getStart(), end));
@@ -244,8 +244,8 @@ public final class CombineGVCFs extends MultiVariantWalkerGroupedOnStart {
      * @param intervalToClose
      */
     private void resizeReferenceIfNeeded(SimpleInterval intervalToClose) {
-        final int leftEdge = storedReferenceContext.getInterval().getStart() - intervalToClose.getStart();
-        final int rightEdge = intervalToClose.getEnd() - storedReferenceContext.getInterval().getEnd();
+        final int leftEdge = storedReferenceContext.getStart() - intervalToClose.getStart();
+        final int rightEdge = intervalToClose.getEnd() - storedReferenceContext.getEnd();
 
         storedReferenceContext.setWindow(Math.max(1, leftEdge), Math.max(1, rightEdge));
     }
@@ -348,7 +348,7 @@ public final class CombineGVCFs extends MultiVariantWalkerGroupedOnStart {
         intersection.retainAll(samples);
 
         //if there's a starting VC with a sample that's already in a current VC, don't skip this position
-        return prevPos != null && referenceContext.getInterval().getStart() == prevPos.getStart() + 1 && intersection.isEmpty();
+        return prevPos != null && referenceContext.getStart() == prevPos.getStart() + 1 && intersection.isEmpty();
     }
 
     private Set<String> getSamples(List<VariantContext> variantContexts) {

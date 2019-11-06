@@ -83,7 +83,7 @@ public class F1R2CountsCollector {
     }
 
     public void process(final ReadPileup pileup, final ReferenceContext referenceContext) {
-        final int position = referenceContext.getInterval().getStart();
+        final int position = referenceContext.getStart();
         final String refContext = referenceContext.getKmerAround(position, F1R2FilterConstants.REF_CONTEXT_PADDING);
         if (refContext == null) {
             return;

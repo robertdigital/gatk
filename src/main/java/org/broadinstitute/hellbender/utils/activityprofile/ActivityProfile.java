@@ -145,64 +145,37 @@ public class ActivityProfile {
 
         final List<AssemblyRegion> regions = new ArrayList<>();
 
-        while ( true ) {
-            final AssemblyRegion nextRegion = popNextReadyAssemblyRegion(assemblyRegionExtension, minRegionSize, maxRegionSize, forceConversion);
-            if ( nextRegion == null ) {
-                return regions;
+        // TODO: there's more logic to terminating the loop than just this
+        while ( !stateList.isEmpty() ) {
+            // If we are flushing the activity profile we need to trim off the excess states so that we don't create regions outside of our current processing interval
+            if(forceConversion) {
+                final List<ActivityProfileState> statesToTrimAway = new ArrayList<>(stateList.subList(getSpan().size(), stateList.size()));
+                stateList.removeAll(statesToTrimAway);
             }
-            else {
-                regions.add(nextRegion);
+
+            final ActivityProfileState first = stateList.get(0);
+            final boolean isActiveRegion = first.getActiveProb() > activeProbThreshold;
+            final int offsetOfNextRegionEnd = findEndOfRegion(isActiveRegion, minRegionSize, maxRegionSize, forceConversion);
+
+            if ( offsetOfNextRegionEnd == -1 ) {
+                // TODO: leave loop
             }
-        }
-    }
 
-    /**
-     * Helper function for popReadyActiveRegions that pops the first ready region off the front of this profile
-     *
-     * If a region is returned, modifies the state of this profile so that states used to make the region are
-     * no longer part of the profile.  Associated information (like the region start position) of this profile
-     * are also updated.
-     *
-     * @param assemblyRegionExtension the extension value to provide to the constructed regions
-     * @param minRegionSize the minimum region size, in the case where we have to cut up regions that are too large
-     * @param maxRegionSize the maximize size of the returned region
-     * @param forceConversion if true, we'll return a region whose end isn't sufficiently far from the end of the
-     *                        stateList.  Used to close out the active region when we've hit some kind of end (such
-     *                        as the end of the contig)
-     * @return a fully formed assembly region, or null if none can be made
-     */
-    private AssemblyRegion popNextReadyAssemblyRegion( final int assemblyRegionExtension, final int minRegionSize, final int maxRegionSize, final boolean forceConversion ) {
-        if ( stateList.isEmpty() ) {
-            return null;
-        }
+            // we need to create the active region, and clip out the states we're extracting from this profile
+            final List<ActivityProfileState> sub = stateList.subList(0, offsetOfNextRegionEnd + 1);
+            final List<ActivityProfileState> supportingStates = new ArrayList<>(sub);
+            sub.clear();
 
-        // If we are flushing the activity profile we need to trim off the excess states so that we don't create regions outside of our current processing interval
-        if( forceConversion ) {
-            final List<ActivityProfileState> statesToTrimAway = new ArrayList<>(stateList.subList(getSpan().size(), stateList.size()));
-            stateList.removeAll(statesToTrimAway);
+            // update the start and stop locations as necessary
+            if ( stateList.isEmpty() ) {
+                regionStartLoc = regionStopLoc = null;
+            } else {
+                regionStartLoc = stateList.get(0).getLoc();
+            }
+            final SimpleInterval regionLoc = new SimpleInterval(first.getLoc().getContig(), first.getLoc().getStart(), first.getLoc().getStart() + offsetOfNextRegionEnd);
+            regions.add(new AssemblyRegion(regionLoc, supportingStates, isActiveRegion, assemblyRegionExtension, samHeader));
         }
-
-        final ActivityProfileState first = stateList.get(0);
-        final boolean isActiveRegion = first.getActiveProb() > activeProbThreshold;
-        final int offsetOfNextRegionEnd = findEndOfRegion(isActiveRegion, minRegionSize, maxRegionSize, forceConversion);
-        if ( offsetOfNextRegionEnd == -1 ) {
-            // couldn't find a valid ending offset, so we return null
-            return null;
-        }
-
-        // we need to create the active region, and clip out the states we're extracting from this profile
-        final List<ActivityProfileState> sub = stateList.subList(0, offsetOfNextRegionEnd + 1);
-        final List<ActivityProfileState> supportingStates = new ArrayList<>(sub);
-        sub.clear();
-
-        // update the start and stop locations as necessary
-        if ( stateList.isEmpty() ) {
-            regionStartLoc = regionStopLoc = null;
-        } else {
-            regionStartLoc = stateList.get(0).getLoc();
-        }
-        final SimpleInterval regionLoc = new SimpleInterval(first.getLoc().getContig(), first.getLoc().getStart(), first.getLoc().getStart() + offsetOfNextRegionEnd);
-        return new AssemblyRegion(regionLoc, supportingStates, isActiveRegion, assemblyRegionExtension, samHeader);
+        return regions;
     }
 
     /**

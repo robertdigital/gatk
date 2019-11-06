@@ -2887,11 +2887,11 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
 
         // Get the segment endpoints as variant contexts (assume the alternate allele is a dummy)
         final VariantContext segStartAsVariant = createSubSegmentAsVariantContext(segmentVariantContext, segmentVariantContext.getStart(), segmentVariantContext.getStart());
-        final SimpleInterval segStartAsVariantInterval = new SimpleInterval(referenceContext.getInterval().getContig(), segStartAsVariant.getStart(), segStartAsVariant.getEnd());
+        final SimpleInterval segStartAsVariantInterval = new SimpleInterval(referenceContext.getContig(), segStartAsVariant.getStart(), segStartAsVariant.getEnd());
         final List<GencodeGtfTranscriptFeature> transcriptsOverlappingStart = subsetToOverlappingTranscripts(segStartAsVariant, allBasicOverlappingTranscripts);
 
         final VariantContext segEndAsVariant = createSubSegmentAsVariantContext(segmentVariantContext, segmentVariantContext.getEnd(), segmentVariantContext.getEnd());
-        final SimpleInterval segEndAsVariantInterval = new SimpleInterval(referenceContext.getInterval().getContig(), segEndAsVariant.getStart(), segEndAsVariant.getEnd());
+        final SimpleInterval segEndAsVariantInterval = new SimpleInterval(referenceContext.getContig(), segEndAsVariant.getStart(), segEndAsVariant.getEnd());
         final List<GencodeGtfTranscriptFeature> transcriptsOverlappingEnd = subsetToOverlappingTranscripts(segEndAsVariant, allBasicOverlappingTranscripts);
 
         // Create funcotations for start of segment

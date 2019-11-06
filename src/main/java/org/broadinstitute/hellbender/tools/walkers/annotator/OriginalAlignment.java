@@ -52,7 +52,7 @@ public class OriginalAlignment extends InfoFieldAnnotation {
         final int indexOfMaxLod = MathUtils.maxElementIndex(lods);
         final Allele altAlelle = vc.getAlternateAllele(indexOfMaxLod);
         final Collection<AlleleLikelihoods<GATKRead, Allele>.BestAllele> bestAlleles = likelihoods.bestAllelesBreakingTies();
-        final String currentContig = ref.getInterval().getContig();
+        final String currentContig = ref.getContig();
 
         final long nonChrMAlt = bestAlleles.stream()
                 .filter(ba -> ba.evidence.hasAttribute(AddOriginalAlignmentTags.OA_TAG_NAME) && ba.isInformative() && ba.allele.equals(altAlelle) &&

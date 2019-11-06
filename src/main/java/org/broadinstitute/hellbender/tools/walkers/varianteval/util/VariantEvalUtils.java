@@ -235,7 +235,7 @@ public class VariantEvalUtils {
             HashMap<String, Collection<VariantContext>> mapping = new HashMap<>();
 
             //TODO: limiting to only those w/ the same start is GATK3 behavior.
-            for (VariantContext vc : featureContext.getValues(track, referenceContext.getInterval().getStart())) {
+            for (VariantContext vc : featureContext.getValues(track, referenceContext.getStart())) {
 
                 // First, filter the VariantContext to represent only the samples for evaluation
                 VariantContext vcsub = vc;
