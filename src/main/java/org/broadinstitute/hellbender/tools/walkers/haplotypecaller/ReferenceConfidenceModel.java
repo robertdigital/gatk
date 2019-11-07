@@ -182,19 +182,18 @@ public class ReferenceConfidenceModel {
         Utils.nonNull(ploidyModel, "the ploidy model cannot be null");
         final int ploidy = ploidyModel.samplePloidy(0); // the first sample = the only sample in reference-confidence mode.
 
-        final SimpleInterval refSpan = activeRegion.getSpan();
-        final List<ReadPileup> refPileups = AssemblyBasedCallerUtils.getPileupsOverReference(activeRegion.getHeader(), refSpan, readLikelihoods, samples);
+        final List<ReadPileup> refPileups = AssemblyBasedCallerUtils.getPileupsOverReference(activeRegion.getHeader(), activeRegion, readLikelihoods, samples);
         final byte[] ref = refHaplotype.getBases();
-        final List<VariantContext> results = new ArrayList<>(refSpan.size());
+        final List<VariantContext> results = new ArrayList<>(activeRegion.getLengthOnReference());
         final String sampleName = readLikelihoods.getSample(0);
 
-        final int globalRefOffset = refSpan.getStart() - activeRegion.getExtendedSpan().getStart();
+        final int globalRefOffset = activeRegion.getStart() - activeRegion.getExtendedSpan().getStart();
         // Note, we use an indexed for-loop here because this method has a large impact on the profile of HaplotypeCaller runtime in GVCF mode
         final int refPileupsSize = refPileups.size();
         for (int i = 0; i < refPileupsSize; i++) {
             final ReadPileup pileup = refPileups.get(i);
             final Locatable curPos = pileup.getLocation();
-            final int offset = curPos.getStart() - refSpan.getStart();
+            final int offset = curPos.getStart() - activeRegion.getStart();
 
             final VariantContext overlappingSite = GATKVariantContextUtils.getOverlappingVariantContext(curPos, variantCalls);
             final List<VariantContext> currentPriors = VCpriors.isEmpty() ? Collections.emptyList() : getMatchingPriors(curPos, overlappingSite, VCpriors);

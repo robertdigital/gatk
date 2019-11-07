@@ -2,6 +2,7 @@ package org.broadinstitute.hellbender.tools.walkers.haplotypecaller;
 
 import com.google.common.annotations.VisibleForTesting;
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.util.Locatable;
 import htsjdk.variant.variantcontext.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -106,7 +107,7 @@ public class HaplotypeCallerGenotypingEngine extends GenotypingEngine<StandardCa
                                                       final Map<String, List<GATKRead>> perSampleFilteredReadList,
                                                       final byte[] ref,
                                                       final SimpleInterval refLoc,
-                                                      final SimpleInterval activeRegionWindow,
+                                                      final Locatable activeRegionWindow,
                                                       final FeatureContext tracker,
                                                       final List<VariantContext> givenAlleles,
                                                       final boolean emitReferenceConfidence,

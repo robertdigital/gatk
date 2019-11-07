@@ -78,19 +78,19 @@ public class AssemblyRegionIteratorUnitTest extends GATKBaseTest {
             while ( iter.hasNext() ) {
                 final AssemblyRegion region = iter.next();
 
-                Assert.assertTrue(region.getSpan().size() <= maxRegionSize, "region size " + region.getSpan().size() + " exceeds the configured maximum: " + maxRegionSize);
+                Assert.assertTrue(region.getLengthOnReference() <= maxRegionSize, "region size " + region.getLengthOnReference() + " exceeds the configured maximum: " + maxRegionSize);
 
-                final int regionContigLength = readsDictionary.getSequence(region.getSpan().getContig()).getSequenceLength();
-                final int expectedLeftRegionPadding = region.getSpan().getStart() - assemblyRegionPadding > 0 ? assemblyRegionPadding : region.getSpan().getStart() - 1;
-                final int expectedRightRegionPadding = region.getSpan().getEnd() + assemblyRegionPadding <= regionContigLength ? assemblyRegionPadding : regionContigLength - region.getSpan().getEnd();
-                Assert.assertEquals(region.getSpan().getStart() - region.getExtendedSpan().getStart(), expectedLeftRegionPadding, "Wrong amount of padding on the left side of the region");
-                Assert.assertEquals(region.getExtendedSpan().getEnd() - region.getSpan().getEnd(), expectedRightRegionPadding, "Wrong amount of padding on the right side of the region");
+                final int regionContigLength = readsDictionary.getSequence(region.getContig()).getSequenceLength();
+                final int expectedLeftRegionPadding = region.getStart() - assemblyRegionPadding > 0 ? assemblyRegionPadding : region.getStart() - 1;
+                final int expectedRightRegionPadding = region.getEnd() + assemblyRegionPadding <= regionContigLength ? assemblyRegionPadding : regionContigLength - region.getEnd();
+                Assert.assertEquals(region.getStart() - region.getExtendedSpan().getStart(), expectedLeftRegionPadding, "Wrong amount of padding on the left side of the region");
+                Assert.assertEquals(region.getExtendedSpan().getEnd() - region.getEnd(), expectedRightRegionPadding, "Wrong amount of padding on the right side of the region");
                 final SimpleInterval regionInterval = region.getExtendedSpan();
                 final List<GATKRead> regionActualReads = region.getReads();
 
                 if ( previousRegion != null ) {
-                    Assert.assertTrue(IntervalUtils.isBefore(previousRegion.getSpan(), region.getSpan(), readsDictionary), "Previous assembly region's span is not before the current assembly region's span");
-                    Assert.assertEquals(previousRegion.getSpan().getEnd(), region.getSpan().getStart() - 1, "previous and current regions are not contiguous");
+                    Assert.assertTrue(IntervalUtils.isBefore(previousRegion, region, readsDictionary), "Previous assembly region's span is not before the current assembly region's span");
+                    Assert.assertEquals(previousRegion.getEnd(), region.getStart() - 1, "previous and current regions are not contiguous");
                 }
 
                 GATKRead previousRead = null;

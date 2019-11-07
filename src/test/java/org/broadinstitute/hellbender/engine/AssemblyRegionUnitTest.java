@@ -45,7 +45,7 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
         final AssemblyRegion ar = new AssemblyRegion(loc, true, 2, header);
         Assert.assertEquals(ar.getExtension(), 2);
         Assert.assertEquals(ar.isActive(), true);
-        Assert.assertEquals(ar.getSpan(), loc);
+        Assert.assertEquals(new SimpleInterval(ar), loc);
         Assert.assertEquals(ar.getHeader(), header);
     }
 
@@ -70,7 +70,7 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
     public void testCreatingAssemblyRegions(final SimpleInterval loc, final boolean isActive, final int extension) {
         final AssemblyRegion region = new AssemblyRegion(loc, isActive, extension, header);
         Assert.assertFalse(region.isFinalized());
-        Assert.assertEquals(region.getSpan(), loc);
+        Assert.assertEquals(new SimpleInterval(region), loc);
         Assert.assertEquals(region.getExtendedSpan().getStart(), Math.max(loc.getStart() - extension, 1));
         Assert.assertEquals(region.getExtendedSpan().getEnd(), Math.min(loc.getEnd() + extension, contigLength));
         Assert.assertEquals(region.isActive(), isActive);
@@ -340,7 +340,7 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
     public void testTrimAssemblyRegion(final SimpleInterval regionLoc, final int extension, final SimpleInterval desiredSpan, final SimpleInterval expectedAssemblyRegion, final int expectedExtension) {
         final AssemblyRegion region = new AssemblyRegion(regionLoc, true, extension, header);
         final AssemblyRegion trimmed = region.trim(desiredSpan);
-        Assert.assertEquals(trimmed.getSpan(), expectedAssemblyRegion, "Incorrect region");
+        Assert.assertEquals(new SimpleInterval(trimmed), expectedAssemblyRegion, "Incorrect region");
         Assert.assertEquals(trimmed.getExtension(), expectedExtension, "Incorrect region");
     }
 }

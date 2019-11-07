@@ -219,7 +219,7 @@ public class FilterAlignmentArtifacts extends MultiVariantWalkerGroupedOnStart {
             readLikelihoods.switchToNaturalLog();
             final Map<GATKRead,GATKRead> readRealignments = AssemblyBasedCallerUtils.realignReadsToTheirBestHaplotype(readLikelihoods, assemblyResult.getReferenceHaplotype(), assemblyResult.getPaddedReferenceLoc(), ALIGNER);
             readLikelihoods.changeEvidence(readRealignments);
-            writeBamOutput(assemblyResult, readLikelihoods, new HashSet<>(readLikelihoods.alleles()), regionForGenotyping.getSpan());
+            writeBamOutput(assemblyResult, readLikelihoods, new HashSet<>(readLikelihoods.alleles()), regionForGenotyping);
 
             final LocusIteratorByState libs = new LocusIteratorByState(regionForGenotyping.getReads().iterator(), DownsamplingMethod.NONE, false, samplesList.asListOfSamples(), bamHeader, true);
 

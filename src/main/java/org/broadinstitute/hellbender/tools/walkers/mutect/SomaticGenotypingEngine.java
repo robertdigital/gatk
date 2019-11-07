@@ -62,7 +62,7 @@ public class SomaticGenotypingEngine {
             final AlleleLikelihoods<GATKRead, Haplotype> logReadLikelihoods,
             final AssemblyResultSet assemblyResultSet,
             final ReferenceContext referenceContext,
-            final SimpleInterval activeRegionWindow,
+            final Locatable activeRegionWindow,
             final FeatureContext featureContext,
             final List<VariantContext> givenAlleles,
             final SAMFileHeader header,

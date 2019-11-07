@@ -233,7 +233,7 @@ public final class AssemblyBasedCallerUtils {
     public static AssemblyRegion assemblyRegionWithWellMappedReads(final AssemblyRegion originalAssemblyRegion,
                                                                    final int minMappingQuality,
                                                                    final SAMFileHeader readsHeader) {
-        final AssemblyRegion result = new AssemblyRegion(originalAssemblyRegion.getSpan(), originalAssemblyRegion.isActive(), originalAssemblyRegion.getExtension(), readsHeader);
+        final AssemblyRegion result = new AssemblyRegion(originalAssemblyRegion, originalAssemblyRegion.isActive(), originalAssemblyRegion.getExtension(), readsHeader);
         originalAssemblyRegion.getReads().stream()
                 .filter(rec -> rec.getMappingQuality() >= minMappingQuality)
                 .forEach(result::add);
@@ -440,7 +440,7 @@ public final class AssemblyBasedCallerUtils {
      * Get a list of pileups that span the entire active region span, in order, one for each position
      */
     public static List<ReadPileup> getPileupsOverReference(final SAMFileHeader readsHeader,
-                                                     final SimpleInterval activeRegionSpan,
+                                                     final Locatable activeRegionSpan,
                                                      final AlleleLikelihoods<GATKRead, Haplotype> readLikelihoods,
                                                      final SampleList samples) {
         final List<GATKRead> reads = new ArrayList<>(readLikelihoods.sampleEvidence(0));

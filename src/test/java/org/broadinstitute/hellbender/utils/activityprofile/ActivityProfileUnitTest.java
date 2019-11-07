@@ -108,7 +108,6 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
             profile.add(new ActivityProfileState(new SimpleInterval(loc), p));
             Assert.assertFalse(profile.isEmpty(), "Profile shouldn't be empty after adding a state");
         }
-        Assert.assertEquals(genomeLocParser.createGenomeLoc(profile.regionStartLoc), genomeLocParser.createGenomeLoc(cfg.regionStart.getContig(), cfg.regionStart.getStart(), cfg.regionStart.getStart() ), "Start loc should be the start of the region");
 
         Assert.assertEquals(profile.stateList.size(), cfg.probs.size(), "Should have exactly the number of states we expected to add");
         assertProbsAreEqual(profile.stateList, cfg.probs);
@@ -229,16 +228,16 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
 
     private AssemblyRegion assertGoodRegions(final int start, final List<AssemblyRegion> regions, final int maxRegionSize, AssemblyRegion lastRegion, final List<Boolean> probs, final List<Boolean> seenSites) {
         for ( final AssemblyRegion region : regions ) {
-            Assert.assertTrue(region.getSpan().size() > 0, "Region " + region + " has a bad size");
-            Assert.assertTrue(region.getSpan().size() <= maxRegionSize, "Region " + region + " has a bad size: it's big than the max region size " + maxRegionSize);
+            Assert.assertTrue(region.getLengthOnReference() > 0, "Region " + region + " has a bad size");
+            Assert.assertTrue(region.getLengthOnReference() <= maxRegionSize, "Region " + region + " has a bad size: it's big than the max region size " + maxRegionSize);
             if ( lastRegion != null ) {
-                Assert.assertTrue(region.getSpan().getStart() == lastRegion.getSpan().getEnd() + 1, "Region " + region + " doesn't start immediately after previous region" + lastRegion);
+                Assert.assertTrue(region.getStart() == lastRegion.getEnd() + 1, "Region " + region + " doesn't start immediately after previous region" + lastRegion);
             }
 
             // check that all active bases are actually active
-            final int regionOffset = region.getSpan().getStart() - start;
+            final int regionOffset = region.getStart() - start;
             Assert.assertTrue(regionOffset >= 0 && regionOffset < probs.size(), "Region " + region + " has a bad offset w.r.t. start");
-            for ( int j = 0; j < region.getSpan().size(); j++ ) {
+            for ( int j = 0; j < region.getLengthOnReference(); j++ ) {
                 final int siteOffset = j + regionOffset;
                 Assert.assertEquals(region.isActive(), probs.get(siteOffset).booleanValue());
                 Assert.assertFalse(seenSites.get(siteOffset), "Site " + j + " in " + region + " was seen already");
@@ -387,7 +386,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
         final List<AssemblyRegion> regions = profile.popReadyAssemblyRegions(0, minRegionSize, maxRegionSize, false);
         Assert.assertTrue(regions.size() >= 1, "Should only be one regions for this test");
         final AssemblyRegion region = regions.get(0);
-        Assert.assertEquals(region.getSpan().getStart(), 1, "Region should start at 1");
-        Assert.assertEquals(region.getSpan().size(), expectedRegionSize, "Incorrect region size; cut must have been incorrect");
+        Assert.assertEquals(region.getStart(), 1, "Region should start at 1");
+        Assert.assertEquals(region.getLengthOnReference(), expectedRegionSize, "Incorrect region size; cut must have been incorrect");
     }
 }

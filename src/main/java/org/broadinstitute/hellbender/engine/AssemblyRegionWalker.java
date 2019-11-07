@@ -300,7 +300,7 @@ public abstract class AssemblyRegionWalker extends WalkerBase {
                     new FeatureContext(features, assemblyRegion.getExtendedSpan()));
 
             // For this traversal, the progress meter unit is the assembly region rather than the read shard
-            progressMeter.update(assemblyRegion.getSpan());
+            progressMeter.update(assemblyRegion);
         }
     }
 

@@ -403,12 +403,11 @@ public final class AssemblyRegionTrimmer {
         }
 
         final List<VariantContext> withinActiveRegion = new LinkedList<>();
-        final SimpleInterval originalRegionRange = originalRegion.getSpan();
         boolean foundNonSnp = false;
         SimpleInterval variantSpan = null;
         for ( final VariantContext vc : allVariantsWithinExtendedRegion ) {
-            final SimpleInterval vcLoc = new SimpleInterval(vc);
-            if ( originalRegionRange.overlaps(vcLoc) ) {
+            if ( originalRegion.overlaps(vc) ) {
+                final SimpleInterval vcLoc = new SimpleInterval(vc);
                 foundNonSnp = foundNonSnp || ! vc.isSNP();
                 variantSpan = variantSpan == null ? vcLoc : variantSpan.spanWith(vcLoc);
                 withinActiveRegion.add(vc);
@@ -426,13 +425,13 @@ public final class AssemblyRegionTrimmer {
             return Result.noTrimming(emitReferenceConfidence, originalRegion, padding, usableExtension, withinActiveRegion);
         }
 
-        final SimpleInterval maximumSpan = originalRegionRange.expandWithinContig(usableExtension, sequenceDictionary);
+        final SimpleInterval maximumSpan = new SimpleInterval(originalRegion).expandWithinContig(usableExtension, sequenceDictionary);
         final SimpleInterval idealSpan = variantSpan.expandWithinContig(padding, sequenceDictionary);
         final SimpleInterval finalSpan = maximumSpan.intersect(idealSpan).mergeWithContiguous(variantSpan);
 
         // Make double sure that, if we are emitting GVCF we won't call non-variable positions beyond the target active region span.
         // In regular call we don't do so so we don't care and we want to maintain behavior, so the conditional.
-        final SimpleInterval callableSpan = emitReferenceConfidence ? variantSpan.intersect(originalRegionRange) : variantSpan;
+        final SimpleInterval callableSpan = emitReferenceConfidence ? variantSpan.intersect(originalRegion) : variantSpan;
 
         final Pair<SimpleInterval, SimpleInterval> nonVariantRegions = nonVariantTargetRegions(originalRegion, callableSpan);
 
@@ -456,21 +455,20 @@ public final class AssemblyRegionTrimmer {
      * @return never {@code null}; 0, 1 or 2 element list.
      */
     private Pair<SimpleInterval, SimpleInterval> nonVariantTargetRegions(final AssemblyRegion targetRegion, final SimpleInterval variantSpan) {
-        final SimpleInterval targetRegionRange = targetRegion.getSpan();
         final int finalStart = variantSpan.getStart();
         final int finalStop = variantSpan.getEnd();
 
-        final int targetStart = targetRegionRange.getStart();
-        final int targetStop = targetRegionRange.getEnd();
+        final int targetStart = targetRegion.getStart();
+        final int targetStop = targetRegion.getEnd();
 
         final boolean preTrimmingRequired = targetStart < finalStart;
         final boolean postTrimmingRequired = targetStop > finalStop;
         if (preTrimmingRequired) {
-            final String contig = targetRegionRange.getContig();
+            final String contig = targetRegion.getContig();
             return postTrimmingRequired ? Pair.of(new SimpleInterval(contig, targetStart, finalStart - 1), new SimpleInterval(contig, finalStop + 1, targetStop)) :
                                           Pair.of(new SimpleInterval(contig, targetStart, finalStart - 1), null);
         } else if (postTrimmingRequired) {
-            return Pair.of(null, new SimpleInterval(targetRegionRange.getContig(), finalStop + 1, targetStop));
+            return Pair.of(null, new SimpleInterval(targetRegion.getContig(), finalStop + 1, targetStop));
         } else {
             return Pair.of(null, null);
         }

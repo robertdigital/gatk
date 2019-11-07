@@ -249,8 +249,8 @@ public final class Mutect2Engine implements AssemblyRegionEvaluator {
         readLikelihoods.changeEvidence(readRealignments);
 
         final CalledHaplotypes calledHaplotypes = genotypingEngine.callMutations(
-                readLikelihoods, assemblyResult, referenceContext, regionForGenotyping.getSpan(), featureContext, givenAlleles, header, haplotypeBAMWriter.isPresent(), emitReferenceConfidence());
-        writeBamOutput(assemblyResult, readLikelihoods, calledHaplotypes, regionForGenotyping.getSpan());
+                readLikelihoods, assemblyResult, referenceContext, regionForGenotyping, featureContext, givenAlleles, header, haplotypeBAMWriter.isPresent(), emitReferenceConfidence());
+        writeBamOutput(assemblyResult, readLikelihoods, calledHaplotypes, regionForGenotyping);
         if (emitReferenceConfidence()) {
             if ( !containsCalls(calledHaplotypes) ) {
                 // no called all of the potential haplotypes

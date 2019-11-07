@@ -7,6 +7,7 @@ import org.broadinstitute.hellbender.utils.IntervalUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
 import org.broadinstitute.hellbender.utils.clipping.ReadClipper;
+import org.broadinstitute.hellbender.utils.param.ParamUtils;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
 import org.broadinstitute.hellbender.utils.read.ReadCoordinateComparator;
 
@@ -58,15 +59,14 @@ public final class AssemblyRegion implements Locatable {
      * @param isActive indicates whether this is an active region, or an inactive one
      * @param extension the active region extension to use for this active region
      */
-    public AssemblyRegion(final SimpleInterval activeRegionLoc, final boolean isActive, final int extension, final SAMFileHeader header) {
-        Utils.validateArg( activeRegionLoc.size() > 0, () -> "Active region cannot be of zero size, but got " + activeRegionLoc);
-        Utils.validateArg( extension >= 0, () -> "extension cannot be < 0 but got " + extension);
+    public AssemblyRegion(final Locatable activeRegionLoc, final boolean isActive, final int extension, final SAMFileHeader header) {
+        ParamUtils.isPositive( activeRegionLoc.getLengthOnReference(), "Active region cannot be of zero size");
 
         this.header = Utils.nonNull(header);
         reads = new ArrayList<>();
-        this.activeRegionLoc = Utils.nonNull(activeRegionLoc);
+        this.activeRegionLoc = new SimpleInterval(Utils.nonNull(activeRegionLoc));
         this.isActive = isActive;
-        this.extension = extension;
+        this.extension = ParamUtils.isPositiveOrZero(extension, "extension may not be negative");
         final String contig = activeRegionLoc.getContig();
         extendedLoc = IntervalUtils.trimIntervalToContig(contig, activeRegionLoc.getStart() - extension, activeRegionLoc.getEnd() + extension, this.header.getSequence(contig).getSequenceLength());
     }
@@ -191,7 +191,7 @@ public final class AssemblyRegion implements Locatable {
         Utils.nonNull(extendedSpan, "Active region extended span cannot be null");
         Utils.validateArg(extendedSpan.contains(span), "The requested extended span must fully contain the requested span");
 
-        final SimpleInterval subActive = getSpan().intersect(span);
+        final SimpleInterval subActive = activeRegionLoc.intersect(span);
         final int requiredOnRight = Math.max(extendedSpan.getEnd() - subActive.getEnd(), 0);
         final int requiredOnLeft = Math.max(subActive.getStart() - extendedSpan.getStart(), 0);
         final int requiredExtension = Math.min(Math.max(requiredOnLeft, requiredOnRight), getExtension());
@@ -344,19 +344,8 @@ public final class AssemblyRegion implements Locatable {
      * @return true if this region is equal, excluding any reads and derived values, to other
      */
     public boolean equalsIgnoreReads(final AssemblyRegion other) {
-        if ( other == null ) {
-            return false;
-        }
-        if ( ! activeRegionLoc.equals(other.activeRegionLoc)) {
-            return false;
-        }
-        if ( isActive() != other.isActive()) {
-            return false;
-        }
-        if ( extension != other.extension ) {
-            return false;
-        }
-        return extendedLoc.equals(other.extendedLoc);
+        return other != null && isActive == other.isActive && extension == other.extension &&
+                activeRegionLoc.equals(other.activeRegionLoc) && extendedLoc.equals(other.extendedLoc);
     }
 
     public void setFinalized(final boolean value) {

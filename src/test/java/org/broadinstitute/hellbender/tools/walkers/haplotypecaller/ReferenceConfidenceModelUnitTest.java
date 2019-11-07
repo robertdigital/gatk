@@ -506,7 +506,7 @@ public final class ReferenceConfidenceModelUnitTest extends GATKBaseTest {
 
         final PloidyModel ploidyModel = new HomogeneousPloidyModel(samples,2);
         final IndependentSampleGenotypesModel genotypingModel = new IndependentSampleGenotypesModel();
-        final List<Integer> expectedDPs = Collections.nCopies(data.getActiveRegion().getSpan().size(), nReads);
+        final List<Integer> expectedDPs = Collections.nCopies(data.getActiveRegion().getLengthOnReference(), nReads);
         final List<VariantContext> contexts = model.calculateRefConfidence(data.getRefHap(), haplotypes, data.getPaddedRefLoc(), data.getActiveRegion(), likelihoods, ploidyModel, calls, false, Collections.emptyList());
         // Asserting that none of the reads after calculateRefConfidence have indel informativeness caching values attached.
         for (GATKRead read : data.getActiveRegion().getReads()) {
@@ -530,7 +530,7 @@ public final class ReferenceConfidenceModelUnitTest extends GATKBaseTest {
                 data.getActiveRegion().add(data.makeRead(start, readLen));
                 final AlleleLikelihoods<GATKRead, Haplotype> likelihoods = createDummyStratifiedReadMap(data.getRefHap(), samples, data.getActiveRegion());
 
-                final List<Integer> expectedDPs = new ArrayList<>(Collections.nCopies(data.getActiveRegion().getSpan().size(), 0));
+                final List<Integer> expectedDPs = new ArrayList<>(Collections.nCopies(data.getActiveRegion().getLengthOnReference(), 0));
                 for ( int i = start; i < readLen + start; i++ ) expectedDPs.set(i, 1);
                 final List<VariantContext> contexts = model.calculateRefConfidence(data.getRefHap(), haplotypes, data.getPaddedRefLoc(), data.getActiveRegion(), likelihoods, ploidyModel, calls);
                 // Asserting that none of the reads after calculateRefConfidence have indel informativeness caching values attached.
@@ -571,7 +571,7 @@ public final class ReferenceConfidenceModelUnitTest extends GATKBaseTest {
 
                     final AlleleLikelihoods<GATKRead, Haplotype> likelihoods = createDummyStratifiedReadMap(data.getRefHap(), samples, data.getActiveRegion());
 
-                    final List<Integer> expectedDPs = Collections.nCopies(data.getActiveRegion().getSpan().size(), nReads);
+                    final List<Integer> expectedDPs = Collections.nCopies(data.getActiveRegion().getLengthOnReference(), nReads);
                     final List<VariantContext> contexts = model.calculateRefConfidence(data.getRefHap(), haplotypes, data.getPaddedRefLoc(), data.getActiveRegion(), likelihoods, ploidyModel, calls);
                     // Asserting that none of the reads after calculateRefConfidence have indel informativeness caching values attached.
                     for (GATKRead read : data.getActiveRegion().getReads()) {
@@ -615,14 +615,14 @@ public final class ReferenceConfidenceModelUnitTest extends GATKBaseTest {
         Assert.assertNotNull(contexts);
 
         final SimpleInterval loc = data.getActiveRegion().getExtendedSpan();
-        final List<Boolean> seenBP = new ArrayList<>(Collections.nCopies(data.getActiveRegion().getSpan().size(), false));
+        final List<Boolean> seenBP = new ArrayList<>(Collections.nCopies(data.getActiveRegion().getLengthOnReference(), false));
 
         for ( int i = 0; i < loc.size(); i++ ) {
             final GenomeLoc curPos = parser.createGenomeLoc(loc.getContig(), loc.getStart() + i);
             final VariantContext call = GATKVariantContextUtils.getOverlappingVariantContext(curPos, calls);
             final VariantContext refModel = GATKVariantContextUtils.getOverlappingVariantContext(curPos, contexts);
 
-            if ( ! data.getActiveRegion().getSpan().contains(curPos) ) {
+            if ( ! data.getActiveRegion().contains(curPos) ) {
                 // part of the extended interval, but not the full interval
                 Assert.assertNull(refModel);
                 continue;
@@ -643,7 +643,7 @@ public final class ReferenceConfidenceModelUnitTest extends GATKBaseTest {
                 }
 
             } else {
-                final int expectedDP = expectedDPs.get(curPos.getStart() - data.getActiveRegion().getSpan().getStart());
+                final int expectedDP = expectedDPs.get(curPos.getStart() - data.getActiveRegion().getStart());
                 Assert.assertEquals(refModel.getStart(), loc.getStart() + i);
                 Assert.assertEquals(refModel.getEnd(), loc.getStart() + i);
                 Assert.assertFalse(refModel.hasLog10PError());
@@ -662,7 +662,7 @@ public final class ReferenceConfidenceModelUnitTest extends GATKBaseTest {
             final VariantContext vc = call == null ? refModel : call;
             if ( curPos.getStart() == vc.getStart() ) {
                 for ( int pos = vc.getStart(); pos <= vc.getEnd(); pos++ ) {
-                    final int j = pos - data.getActiveRegion().getSpan().getStart();
+                    final int j = pos - data.getActiveRegion().getStart();
                     Assert.assertFalse(seenBP.get(j));
                     seenBP.set(j, true);
                 }

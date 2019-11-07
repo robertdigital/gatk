@@ -120,7 +120,7 @@ public final class AssemblyResultSet {
 
         if ( debug ) {
             logger.info("Trimmed region to " + trimmedAssemblyRegion.getSpan() + " size " +
-                    trimmedAssemblyRegion.getSpan().size() + " reduced number of haplotypes from " +
+                    trimmedAssemblyRegion.getLengthOnReference() + " reduced number of haplotypes from " +
                     haplotypeList.size() + " to only " + trimmedHaplotypes.size());
 
             for (final Haplotype remaining : trimmedHaplotypes) {
