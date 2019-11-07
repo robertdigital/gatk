@@ -11,7 +11,6 @@ import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
@@ -30,11 +29,6 @@ public final class AssemblyRegionTrimmer {
      * Holds the debug flag. If {@code true} the trimmer will output debugging messages into the log.
      */
     private boolean debug;
-
-    /**
-     * Holds the extension to be used
-     */
-    private int usableExtension;
 
     private ReadThreadingAssemblerArgumentCollection assemblyArgs;
 
@@ -63,26 +57,10 @@ public final class AssemblyRegionTrimmer {
         this.assemblyArgs = Utils.nonNull(assemblyArgs);;
         this.sequenceDictionary = sequenceDictionary;
 
-        checkUserArguments();
+        if ( this.assemblyArgs.variantPadding < 0 ) {
+            throw new CommandLineException.BadArgumentValue("padding-around-variants", "" + this.assemblyArgs.variantPadding + "< 0");
+        }
         this.debug = assemblyArgs.debugAssembly;
-        usableExtension = this.assemblyArgs.extension;
-    }
-
-    /**
-     * Checks user trimming argument values
-     *
-     * @throws CommandLineException.BadArgumentValue if there is some problem with any of the arguments values.
-     */
-    private void checkUserArguments() {
-        if ( assemblyArgs.snpPadding < 0 ) {
-            throw new CommandLineException.BadArgumentValue("paddingAroundSNPs", "" + assemblyArgs.snpPadding + "< 0");
-        }
-        if ( assemblyArgs.indelPadding < 0 ) {
-            throw new CommandLineException.BadArgumentValue("paddingAroundIndels", "" + assemblyArgs.indelPadding + "< 0");
-        }
-        if ( assemblyArgs.extension < 0) {
-            throw new CommandLineException.BadArgumentValue("maxDiscARExtension", "" + assemblyArgs.extension + "< 0");
-        }
     }
 
     /**
@@ -246,20 +224,19 @@ public final class AssemblyRegionTrimmer {
         /**
          * Creates a result indicating that there was no trimming to be done.
          */
-        protected static Result noTrimming(final AssemblyRegion targetRegion,
-                                           final List<VariantContext> events) {
-            final SimpleInterval targetRegionLoc = targetRegion.getSpan();
-            final Result result = new Result(targetRegion, events,Pair.of(null, null), targetRegionLoc, targetRegionLoc);
-            result.callableRegion = targetRegion;
+        protected static Result noTrimming(final AssemblyRegion region, final List<VariantContext> events) {
+            final SimpleInterval targetRegionLoc = region.getSpan();
+            final Result result = new Result(region, events,Pair.of(null, null), targetRegionLoc, targetRegionLoc);
+            result.callableRegion = region;
             return result;
         }
 
         /**
          * Creates a result indicating that no variation was found.
          */
-        protected static Result noVariation(final AssemblyRegion targetRegion) {
-            final Result result = new Result(targetRegion, Collections.emptyList(), Pair.of(targetRegion.getSpan(), null), null, null);
-            result.leftFlankRegion = targetRegion;
+        protected static Result noVariation(final AssemblyRegion region) {
+            final Result result = new Result(region, Collections.emptyList(), Pair.of(region.getSpan(), null), null, null);
+            result.leftFlankRegion = region;
             return result;
         }
     }
@@ -276,9 +253,6 @@ public final class AssemblyRegionTrimmer {
             return Result.noVariation(region);
         }
 
-        boolean foundNonSnp = false;
-        SimpleInterval variantSpan = null;
-
         final List<VariantContext> variantsInRegion = variants.stream().filter(region::overlaps).collect(Collectors.toList());
 
         if ( variantsInRegion.isEmpty() ) {
@@ -287,30 +261,22 @@ public final class AssemblyRegionTrimmer {
             return Result.noTrimming(region, variantsInRegion);
         }
 
-        for ( final VariantContext vc : variantsInRegion ) {
-                final SimpleInterval vcLoc = new SimpleInterval(vc);
-                foundNonSnp = foundNonSnp || ! vc.isSNP();
-                variantSpan = variantSpan == null ? vcLoc : variantSpan.spanWith(vcLoc);
-        }
+        final int minStart = variantsInRegion.stream().mapToInt(VariantContext::getStart).min().getAsInt();
+        final int maxEnd = variantsInRegion.stream().mapToInt(VariantContext::getEnd).max().getAsInt();
+        final SimpleInterval variantSpan = new SimpleInterval(region.getContig(), minStart, maxEnd);
 
-        final int padding = foundNonSnp ? assemblyArgs.indelPadding : assemblyArgs.snpPadding;
-
-        final SimpleInterval maximumSpan = new SimpleInterval(region).expandWithinContig(usableExtension, sequenceDictionary);
-        final SimpleInterval idealSpan = variantSpan.expandWithinContig(padding, sequenceDictionary);
-        final SimpleInterval finalSpan = maximumSpan.intersect(idealSpan).mergeWithContiguous(variantSpan);
+        final SimpleInterval paddedVariantSpan = variantSpan.expandWithinContig(assemblyArgs.variantPadding, sequenceDictionary);
         final SimpleInterval callableSpan = variantSpan.intersect(region);
-
-        final Pair<SimpleInterval, SimpleInterval> nonVariantFlanks = getFlanks(region, callableSpan);
+        final Pair<SimpleInterval, SimpleInterval> nonVariantFlanks = getFlanks(region, paddedVariantSpan);
 
         if ( debug ) {
             logger.info("events       : " + variantsInRegion);
             logger.info("region       : " + region);
             logger.info("callableSpan : " + callableSpan);
-            logger.info("padding      : " + padding);
-            logger.info("finalSpan    : " + finalSpan);
+            logger.info("paddedSpan    : " + paddedVariantSpan);
         }
 
-        return new Result(region, variantsInRegion, nonVariantFlanks,finalSpan, variantSpan);
+        return new Result(region, variantsInRegion, nonVariantFlanks, paddedVariantSpan, variantSpan);
     }
 
     /**

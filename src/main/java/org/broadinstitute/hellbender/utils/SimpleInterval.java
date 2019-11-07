@@ -243,20 +243,6 @@ public final class SimpleInterval implements Locatable, Serializable {
                  Math.max( getEnd(), that.getEnd()) );
      }
 
-     /**
-      * Returns a new SimpleInterval that represents the region between the endpoints of this and other.
-      *
-      * Unlike {@link #mergeWithContiguous}, the two intervals do not need to be contiguous
-      *
-      * @param other the other interval with which to calculate the span
-      * @return a new SimpleInterval that represents the region between the endpoints of this and other.
-      */
-     public SimpleInterval spanWith( final Locatable other ) {
-         Utils.nonNull(other);
-         Utils.validateArg(this.getContig().equals(other.getContig()), "Cannot get span for intervals on different contigs");
-         return new SimpleInterval(contig, Math.min(start, other.getStart()), Math.max(end, other.getEnd()));
-     }
-
      private boolean contiguous(final Locatable that) {
          Utils.nonNull(that);
          return this.getContig().equals(that.getContig()) && this.getStart() <= that.getEnd() + 1 && that.getStart() <= this.getEnd() + 1;
