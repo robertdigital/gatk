@@ -57,17 +57,8 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
             for ( final int size : Arrays.asList(1, 10, 100, 1000) ) {
                 for ( final int ext : Arrays.asList(0, 1, 10, 100) ) {
                     for ( final boolean isActive : Arrays.asList(true, false) ) {
-                        for ( final boolean addStates : Arrays.asList(true, false) ) {
-                            List<ActivityProfileState> states = null;
-                            if ( addStates ) {
-                                states = new LinkedList<>();
-                                for ( int i = start; i < start + size; i++ ) {
-                                    states.add(new ActivityProfileState(new SimpleInterval(contig, i + start, i + start), isActive ? 1.0 : 0.0));
-                                }
-                            }
-                            final SimpleInterval loc = new SimpleInterval(contig, start, start + size - 1);
-                            tests.add(new Object[]{loc, states, isActive, ext});
-                        }
+                        final SimpleInterval loc = new SimpleInterval(contig, start, start + size - 1);
+                        tests.add(new Object[]{loc, isActive, ext});
                     }
                 }
             }
@@ -77,8 +68,8 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
     }
 
     @Test(dataProvider = "ActionRegionCreationTest")
-    public void testCreatingAssemblyRegions(final SimpleInterval loc, final List<ActivityProfileState> supportingStates, final boolean isActive, final int extension) {
-        final AssemblyRegion region = new AssemblyRegion(loc, supportingStates, isActive, extension, header);
+    public void testCreatingAssemblyRegions(final SimpleInterval loc, final boolean isActive, final int extension) {
+        final AssemblyRegion region = new AssemblyRegion(loc, isActive, extension, header);
         Assert.assertFalse(region.isFinalized());
         Assert.assertEquals(region.getSpan(), loc);
         Assert.assertEquals(region.getExtendedSpan().getStart(), Math.max(loc.getStart() - extension, 1));
@@ -89,16 +80,11 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
         Assert.assertEquals(region.getExtension(), extension);
         Assert.assertEquals(region.getReads(), Collections.emptyList());
         Assert.assertEquals(region.size(), 0);
-        Assert.assertEquals(region.getSupportingStates(), supportingStates == null ? Collections.emptyList() : supportingStates);
         Assert.assertNotNull(region.toString());
 
         assertGoodReferenceGetter(region.getAssemblyRegionReference(seq), region.getExtendedSpan(), 0);
         assertGoodReferenceGetter(region.getAssemblyRegionReference(seq, 0), region.getExtendedSpan(), 0);
         assertGoodReferenceGetter(region.getAssemblyRegionReference(seq, 10), region.getExtendedSpan(), 10);
-        assertGoodReferenceGetter(region.getFullReference(seq), region.getReadSpanLoc(), 0);
-        assertGoodReferenceGetter(region.getFullReference(seq, 0), region.getReadSpanLoc(), 0);
-        assertGoodReferenceGetter(region.getFullReference(seq, 10), region.getReadSpanLoc(), 10);
-
 
         region.setFinalized(false);
         Assert.assertFalse(region.isFinalized());
@@ -145,8 +131,8 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
     public void testAssemblyRegionReads(final SimpleInterval loc, final GATKRead read) throws Exception {
         final SimpleInterval expectedSpan = loc.mergeWithContiguous(new SimpleInterval(read));
 
-        final AssemblyRegion region = new AssemblyRegion(loc, null, true, 0, header);
-        final AssemblyRegion region2 = new AssemblyRegion(loc, null, true, 0, header);
+        final AssemblyRegion region = new AssemblyRegion(loc, true, 0, header);
+        final AssemblyRegion region2 = new AssemblyRegion(loc, true, 0, header);
         Assert.assertEquals(region.getReads(), Collections.emptyList());
         Assert.assertEquals(region.size(), 0);
         Assert.assertEquals(region.getExtendedSpan(), loc);
@@ -229,7 +215,7 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
     @Test(dataProvider = "BadReadsTest", expectedExceptions = IllegalArgumentException.class)
     public void testBadReads(final SAMFileHeader header, final GATKRead read1, final GATKRead read2) {
         final SimpleInterval loc = new SimpleInterval(read1);
-        final AssemblyRegion region = new AssemblyRegion(loc, null, true, 0, header);
+        final AssemblyRegion region = new AssemblyRegion(loc, true, 0, header);
         region.add(read1);
         region.add(read2);
     }
@@ -361,7 +347,7 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
 
     @Test(dataProvider = "TrimAssemblyRegionData")
     public void testTrimAssemblyRegion(final SimpleInterval regionLoc, final int extension, final SimpleInterval desiredSpan, final SimpleInterval expectedAssemblyRegion, final int expectedExtension) {
-        final AssemblyRegion region = new AssemblyRegion(regionLoc, Collections.<ActivityProfileState>emptyList(), true, extension, header);
+        final AssemblyRegion region = new AssemblyRegion(regionLoc, true, extension, header);
         final AssemblyRegion trimmed = region.trim(desiredSpan);
         Assert.assertEquals(trimmed.getSpan(), expectedAssemblyRegion, "Incorrect region");
         Assert.assertEquals(trimmed.getExtension(), expectedExtension, "Incorrect region");

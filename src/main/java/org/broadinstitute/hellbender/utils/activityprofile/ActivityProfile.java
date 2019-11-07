@@ -120,7 +120,7 @@ public class ActivityProfile {
             // create an active region, discard the states from that region, and advance the start locus
             final List<ActivityProfileState> statesInRegion = stateList.subList(0, offsetOfNextRegionEnd + 1);
             final SimpleInterval regionLoc = new SimpleInterval(first.getLoc().getContig(), first.getLoc().getStart(), first.getLoc().getStart() + offsetOfNextRegionEnd);
-            regions.add(new AssemblyRegion(regionLoc, statesInRegion, isActiveRegion, assemblyRegionExtension, samHeader));
+            regions.add(new AssemblyRegion(regionLoc, isActiveRegion, assemblyRegionExtension, samHeader));
             statesInRegion.clear();
 
             // update the start and stop locations as necessary

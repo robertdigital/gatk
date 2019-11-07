@@ -305,21 +305,11 @@ public abstract class AssemblyRegionWalker extends WalkerBase {
     }
 
     private void writeAssemblyRegion(final AssemblyRegion region) {
-        writeActivityProfile(region.getSupportingStates());
-
         if ( assemblyRegionOutStream != null ) {
             IGVUtils.printIGVFormatRow(assemblyRegionOutStream, new SimpleInterval(region.getContig(), region.getStart(), region.getStart()),
                     "end-marker", 0.0);
             IGVUtils.printIGVFormatRow(assemblyRegionOutStream, region,
                     "size=" + new SimpleInterval(region).size(), region.isActive() ? 1.0 : -1.0);
-        }
-    }
-
-    private void writeActivityProfile(final List<ActivityProfileState> states) {
-        if ( activityProfileOutStream != null ) {
-            for ( final ActivityProfileState state : states ) {
-                IGVUtils.printIGVFormatRow(activityProfileOutStream, state.getLoc(), "state", Math.min(state.getActiveProb(), 1.0));
-            }
         }
     }
 

@@ -1,19 +1,16 @@
 package org.broadinstitute.hellbender.engine;
 
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.Locatable;
 import org.broadinstitute.hellbender.utils.IntervalUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
-import org.broadinstitute.hellbender.utils.activityprofile.ActivityProfileState;
 import org.broadinstitute.hellbender.utils.clipping.ReadClipper;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
 import org.broadinstitute.hellbender.utils.read.ReadCoordinateComparator;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Region of the genome that gets assembled by the local assembly engine.
@@ -27,13 +24,6 @@ public final class AssemblyRegion implements Locatable {
      * as reads are added or removed from this region.
      */
     private final List<GATKRead> reads;
-
-    /**
-     * An ordered list (by genomic coordinate) of the ActivityProfileStates that went
-     * into this assembly region.  May be empty, which says that no supporting states were
-     * provided when this region was created.
-     */
-    private final List<ActivityProfileState> supportingStates;
 
     /**
      * The raw span of this assembly region, not including the region extension
@@ -73,14 +63,11 @@ public final class AssemblyRegion implements Locatable {
 
     /**
      * Create a new AssemblyRegion containing no reads
-     *
-     * @param activeRegionLoc the span of this active region
-     * @param supportingStates the states that went into creating this region, or null / empty if none are available.
-     *                         If not empty, must have exactly one state for each bp in activeRegionLoc
+     *  @param activeRegionLoc the span of this active region
      * @param isActive indicates whether this is an active region, or an inactive one
      * @param extension the active region extension to use for this active region
      */
-    public AssemblyRegion( final SimpleInterval activeRegionLoc, final List<ActivityProfileState> supportingStates, final boolean isActive, final int extension , final SAMFileHeader header ) {
+    public AssemblyRegion(final SimpleInterval activeRegionLoc, final boolean isActive, final int extension, final SAMFileHeader header) {
         Utils.nonNull(activeRegionLoc, "activeRegionLoc cannot be null");
         Utils.nonNull(header, "header cannot be null");
         Utils.validateArg( activeRegionLoc.size() > 0, () -> "Active region cannot be of zero size, but got " + activeRegionLoc);
@@ -89,53 +76,18 @@ public final class AssemblyRegion implements Locatable {
         this.header = header;
         this.reads = new ArrayList<>();
         this.activeRegionLoc = activeRegionLoc;
-        this.supportingStates = supportingStates == null ? Collections.emptyList() : Collections.unmodifiableList(new ArrayList<>(supportingStates));
         this.isActive = isActive;
         this.extension = extension;
-        this.extendedLoc = trimIntervalToContig(activeRegionLoc.getContig(), activeRegionLoc.getStart() - extension, activeRegionLoc.getEnd() + extension);
+        final String contig = activeRegionLoc.getContig();
+        this.extendedLoc = IntervalUtils.trimIntervalToContig(contig, activeRegionLoc.getStart() - extension, activeRegionLoc.getEnd() + extension, this.header.getSequence(contig).getSequenceLength());
         this.spanIncludingReads = extendedLoc;
-
-        checkStates(activeRegionLoc);
-    }
-
-    /**
-     * Create a new SimpleInterval, bounding start and stop by the start and end of contig
-     *
-     * This function will return null if start and stop cannot be adjusted in any reasonable way
-     * to be on the contig.  For example, if start and stop are both past the end of the contig,
-     * there's no way to fix this, and null will be returned.
-     *
-     * @param contig our contig
-     * @param start our start as an arbitrary integer (may be negative, etc)
-     * @param stop our stop as an arbitrary integer (may be negative, etc)
-     * @return a valid genome loc over contig, or null if a meaningful genome loc cannot be created
-     */
-    private SimpleInterval trimIntervalToContig(final String contig, final int start, final int stop) {
-        final int contigLength = header.getSequence(contig).getSequenceLength();
-        return IntervalUtils.trimIntervalToContig(contig, start, stop, contigLength);
-    }
-
-    private void checkStates(final SimpleInterval activeRegionLoc) {
-        if ( ! this.supportingStates.isEmpty() ) {
-            Utils.validateArg( this.supportingStates.size() == activeRegionLoc.size(), () ->
-                    "Supporting states wasn't empty but it doesn't have exactly one state per bp in the active region: states " + this.supportingStates.size() + " vs. bp in region = " + activeRegionLoc.size());
-            SimpleInterval lastStateLoc = null;
-            for ( final ActivityProfileState state : this.supportingStates ) {
-                if ( lastStateLoc != null ) {
-                    if ( state.getLoc().getStart() != lastStateLoc.getStart() + 1 || !state.getLoc().getContig().equals(lastStateLoc.getContig())) {
-                        throw new IllegalArgumentException("Supporting state has an invalid sequence: last state was " + lastStateLoc + " but next state was " + state);
-                    }
-                }
-                lastStateLoc = state.getLoc();
-            }
-        }
     }
 
     /**
      * Simple interface to create an assembly region that isActive without any profile state
      */
     public AssemblyRegion(final SimpleInterval activeRegionLoc, final int extension, final SAMFileHeader header) {
-        this(activeRegionLoc, Collections.<ActivityProfileState>emptyList(), true, extension, header);
+        this(activeRegionLoc, true, extension, header);
     }
 
     @Override
@@ -222,14 +174,6 @@ public final class AssemblyRegion implements Locatable {
         final int extendStop = Math.min(span.getEnd() + extensionSize, maxStop);
         final SimpleInterval extendedSpan = new SimpleInterval(span.getContig(), extendStart, extendStop);
         return trim(span, extendedSpan);
-
-//TODO - Inconsistent support of substates trimming. Check lack of consistency!!!!
-//        final GenomeLoc subLoc = getLocation().intersect(span);
-//        final int subStart = subLoc.getStart() - getLocation().getStart();
-//        final int subEnd = subStart + subLoc.size();
-//        final List<ActivityProfileState> subStates = supportingStates.isEmpty() ? supportingStates : supportingStates.subList(subStart, subEnd);
-//        return new ActiveRegion( subLoc, subStates, isActive, genomeLocParser, extensionSize );
-
     }
 
     /**
@@ -271,7 +215,7 @@ public final class AssemblyRegion implements Locatable {
         final int requiredOnLeft = Math.max(subActive.getStart() - extendedSpan.getStart(), 0);
         final int requiredExtension = Math.min(Math.max(requiredOnLeft, requiredOnRight), getExtension());
 
-        final AssemblyRegion result = new AssemblyRegion( subActive, Collections.<ActivityProfileState>emptyList(), isActive, requiredExtension, header );
+        final AssemblyRegion result = new AssemblyRegion( subActive, isActive, requiredExtension, header );
 
         final List<GATKRead> myReads = getReads();
         final SimpleInterval resultExtendedLoc = result.getExtendedSpan();
@@ -387,30 +331,6 @@ public final class AssemblyRegion implements Locatable {
      */
     public SimpleInterval getReadSpanLoc() {
         return spanIncludingReads;
-    }
-
-    /**
-     * An ordered list (by genomic coordinate) of the ActivityProfileStates that went
-     * into this active region.  May be empty, which says that no supporting states were
-     * provided when this region was created.
-     * The returned list is unmodifiable.
-     */
-    public List<ActivityProfileState> getSupportingStates() {
-        return supportingStates;
-    }
-
-    /**
-     * See #getActiveRegionReference but using the span including regions not the extended span
-     */
-    public byte[] getFullReference( final ReferenceSequenceFile referenceReader ) {
-        return getFullReference(referenceReader, 0);
-    }
-
-    /**
-     * See #getActiveRegionReference but using the span including regions not the extended span
-     */
-    public byte[] getFullReference( final ReferenceSequenceFile referenceReader, final int padding ) {
-        return getReference(referenceReader, padding, spanIncludingReads);
     }
 
     /**
