@@ -216,53 +216,6 @@ public final class SimpleInterval implements Locatable, Serializable {
         return end - start + 1;
     }
 
-    /**
-     * Determines whether this interval overlaps the provided locatable.
-     *
-     * @param other interval to check
-     * @return true if this interval overlaps other, otherwise false
-     */
-    public boolean overlaps( final Locatable other ) {
-        return overlapsWithMargin(other, 0);
-    }
-
-     /**
-      * Determines whether this interval comes within "margin" of overlapping the provided locatable.
-      * This is the same as plain overlaps if margin=0.
-      *
-      * @param other interval to check
-      * @param margin how many bases may be between the two interval for us to still consider them overlapping; must be non-negative
-      * @return true if this interval overlaps other, otherwise false
-      * @throws IllegalArgumentException if margin is negative
-      */
-     public boolean overlapsWithMargin(final Locatable other, final int margin) {
-         if ( margin < 0 ) {
-             throw new IllegalArgumentException("given margin is negative: " + margin +
-                     "\tfor this: " + toString() + "\tand that: " + (other == null ? "other is null" : other.toString()));
-         }
-         if ( other == null || other.getContig() == null ) {
-             return false;
-         }
-
-         return this.contig.equals(other.getContig()) && this.start <= other.getEnd() + margin && other.getStart() - margin <= this.end;
-     }
-
-
-     /**
-     * Determines whether this interval contains the entire region represented by other
-     * (in other words, whether it covers it).
-     *
-     * @param other interval to check
-     * @return true if this interval contains all of the bases spanned by other, otherwise false
-     */
-    public boolean contains( final Locatable other ) {
-        if ( other == null || other.getContig() == null ) {
-            return false;
-        }
-
-        return this.contig.equals(other.getContig()) && this.start <= other.getStart() && this.end >= other.getEnd();
-    }
-
      /**
       * Returns the intersection of the two intervals. The intervals must overlap or IllegalArgumentException will be thrown.
       */

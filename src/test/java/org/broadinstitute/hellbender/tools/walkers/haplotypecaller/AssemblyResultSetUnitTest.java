@@ -115,7 +115,7 @@ public final class AssemblyResultSetUnitTest extends GATKBaseTest {
 
     @DataProvider(name="trimmingData")
     public Iterator<Object[]> trimmingData() {
-        final AssemblyRegion activeRegion = new AssemblyRegion(new SimpleInterval("1",1000,1100), 25, header);
+        final AssemblyRegion activeRegion = new AssemblyRegion(new SimpleInterval("1",1000,1100), true, 25, header);
         final int length = activeRegion.getExtendedSpan().size();
         final RandomDNA rnd = new RandomDNA(13); // keep it prepoducible by fixing the seed to lucky 13.
         final AssemblyRegionTestDataSet actd = new AssemblyRegionTestDataSet(10,new String(rnd.nextBases(length)),new String[] {

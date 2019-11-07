@@ -273,7 +273,7 @@ public class FilterAlignmentArtifacts extends MultiVariantWalkerGroupedOnStart {
         final int lastReadEnd = variantReads.stream().mapToInt(GATKRead::getEnd).max().orElse(vc.getEnd());
         final SimpleInterval assemblyWindow = new SimpleInterval(vc.getContig(), Math.max(firstReadStart - ASSEMBLY_PADDING,1), lastReadEnd + ASSEMBLY_PADDING);
 
-        final AssemblyRegion assemblyRegion = new AssemblyRegion(assemblyWindow, 0, bamHeader);
+        final AssemblyRegion assemblyRegion = new AssemblyRegion(assemblyWindow, true, 0, bamHeader);
         assemblyRegion.addAll(variantReads);
 
         return assemblyRegion;

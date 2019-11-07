@@ -5,7 +5,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import org.broadinstitute.hellbender.GATKBaseTest;
 import org.broadinstitute.hellbender.utils.IntervalUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
-import org.broadinstitute.hellbender.utils.activityprofile.ActivityProfileState;
 import org.broadinstitute.hellbender.utils.fasta.CachingIndexedFastaSequenceFile;
 import org.broadinstitute.hellbender.utils.io.IOUtils;
 import org.broadinstitute.hellbender.utils.read.ArtificialReadUtils;
@@ -43,7 +42,7 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
     @Test
     public void testConstructor(){
         final SimpleInterval loc = new SimpleInterval("1", 10, 20);
-        final AssemblyRegion ar = new AssemblyRegion(loc, 2, header);
+        final AssemblyRegion ar = new AssemblyRegion(loc, true, 2, header);
         Assert.assertEquals(ar.getExtension(), 2);
         Assert.assertEquals(ar.isActive(), true);
         Assert.assertEquals(ar.getSpan(), loc);

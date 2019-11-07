@@ -787,7 +787,7 @@ public abstract class SegmentedCpxVariantSimpleVariantExtractor implements Seria
             SimpleInterval current = iterator.next();
             while (iterator.hasNext()) {
                 SimpleInterval next = iterator.next();
-                if (current.overlapsWithMargin(next, 1)) {
+                if (current.withinDistanceOf(next, 1)) {
                     current = new SimpleInterval(current.getContig(), current.getStart(), next.getEnd());
                 } else {
                     result.add(current);

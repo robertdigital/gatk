@@ -47,7 +47,7 @@ public class AssemblyBasedCallerUtilsUnitTest extends GATKBaseTest {
         header.addReadGroup(rg);
 
         Assert.assertEquals(header.getSequenceIndex("1"), 0);
-        final AssemblyRegion activeRegion = new AssemblyRegion(new SimpleInterval("1",42596728,42598843), 100, header);
+        final AssemblyRegion activeRegion = new AssemblyRegion(new SimpleInterval("1",42596728,42598843), true, 100, header);
         Assert.assertTrue(activeRegion.isActive());
         Assert.assertFalse(activeRegion.isFinalized());
 

@@ -68,26 +68,17 @@ public final class AssemblyRegion implements Locatable {
      * @param extension the active region extension to use for this active region
      */
     public AssemblyRegion(final SimpleInterval activeRegionLoc, final boolean isActive, final int extension, final SAMFileHeader header) {
-        Utils.nonNull(activeRegionLoc, "activeRegionLoc cannot be null");
-        Utils.nonNull(header, "header cannot be null");
         Utils.validateArg( activeRegionLoc.size() > 0, () -> "Active region cannot be of zero size, but got " + activeRegionLoc);
         Utils.validateArg( extension >= 0, () -> "extension cannot be < 0 but got " + extension);
 
-        this.header = header;
-        this.reads = new ArrayList<>();
-        this.activeRegionLoc = activeRegionLoc;
+        this.header = Utils.nonNull(header);
+        reads = new ArrayList<>();
+        this.activeRegionLoc = Utils.nonNull(activeRegionLoc);
         this.isActive = isActive;
         this.extension = extension;
         final String contig = activeRegionLoc.getContig();
-        this.extendedLoc = IntervalUtils.trimIntervalToContig(contig, activeRegionLoc.getStart() - extension, activeRegionLoc.getEnd() + extension, this.header.getSequence(contig).getSequenceLength());
-        this.spanIncludingReads = extendedLoc;
-    }
-
-    /**
-     * Simple interface to create an assembly region that isActive without any profile state
-     */
-    public AssemblyRegion(final SimpleInterval activeRegionLoc, final int extension, final SAMFileHeader header) {
-        this(activeRegionLoc, true, extension, header);
+        extendedLoc = IntervalUtils.trimIntervalToContig(contig, activeRegionLoc.getStart() - extension, activeRegionLoc.getEnd() + extension, this.header.getSequence(contig).getSequenceLength());
+        spanIncludingReads = extendedLoc;
     }
 
     @Override
@@ -246,8 +237,7 @@ public final class AssemblyRegion implements Locatable {
             return false;
         }
 
-        final SimpleInterval readLoc = new SimpleInterval( read );
-        return readLoc.overlaps(extendedLoc);
+        return read.overlaps(extendedLoc);
     }
 
     /**

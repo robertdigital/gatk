@@ -1761,8 +1761,8 @@ public class GencodeFuncotationFactory extends DataSourceFuncotationFactory {
             final SimpleInterval exonStartInterval = new SimpleInterval(exon.getContig(), adjustedExonStart, adjustedExonStart);
             final SimpleInterval exonEndInterval   = new SimpleInterval(exon.getContig(), adjustedExonEnd, adjustedExonEnd);
 
-            if ( changedBasesInterval.overlapsWithMargin(exonStartInterval, spliceSiteVariantWindowBases) ||
-                 changedBasesInterval.overlapsWithMargin(exonEndInterval, spliceSiteVariantWindowBases) ) {
+            if ( changedBasesInterval.withinDistanceOf(exonStartInterval, spliceSiteVariantWindowBases) ||
+                 changedBasesInterval.withinDistanceOf(exonEndInterval, spliceSiteVariantWindowBases) ) {
                 spliceSiteExon = exon;
                 break;
             }

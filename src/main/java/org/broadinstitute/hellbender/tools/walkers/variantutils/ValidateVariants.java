@@ -246,9 +246,9 @@ public final class ValidateVariants extends VariantWalker {
             // to true.  In a GVCF most blocks are adjacent to each other so they wouldn't normally get merged.  We check
             // if the current record is adjacent to the previous record and "overlap" them if they are so our set is as
             // small as possible while still containing the same bases.
-            final int start = (previousInterval != null && previousInterval.overlapsWithMargin(refInterval, 1)) ?
+            final int start = (previousInterval != null && previousInterval.withinDistanceOf(refInterval, 1)) ?
                     previousInterval.getStart() : refInterval.getStart();
-            final int end = (previousInterval != null && previousInterval.overlapsWithMargin(refInterval, 1)) ?
+            final int end = (previousInterval != null && previousInterval.withinDistanceOf(refInterval, 1)) ?
                     Math.max(previousInterval.getEnd(), vc.getEnd()) : vc.getEnd();
             final GenomeLoc possiblyMergedGenomeLoc = genomeLocSortedSet.getGenomeLocParser().createGenomeLoc(refInterval.getContig(), start, end);
             genomeLocSortedSet.add(possiblyMergedGenomeLoc, true);

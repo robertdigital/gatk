@@ -456,7 +456,7 @@ public final class ReferenceConfidenceModelUnitTest extends GATKBaseTest {
 
             refLoc = new SimpleInterval("1", getStart(), getEnd());
             paddedRefLoc = new SimpleInterval("1", getStart() - extension, getEnd() + extension);
-            region = new AssemblyRegion(getRefLoc(), extension, header);
+            region = new AssemblyRegion(getRefLoc(), true, extension, header);
             final String pad = Strings.repeat("N", extension);
             refHap = ReferenceConfidenceModel.createReferenceHaplotype(getActiveRegion(), (pad + ref + pad).getBytes(), getPaddedRefLoc());
         }
