@@ -247,7 +247,7 @@ public final class AssemblyRegion implements Locatable {
 
         if ( ! reads.isEmpty() ) {
             final GATKRead lastRead = reads.get(size() - 1);
-            Utils.validateArg(Objects.equals(lastRead.getContig(), read.getContig()), () ->
+            Utils.validateArg(lastRead.contigsMatch(read), () ->
                     "Attempting to add a read to ActiveRegion not on the same contig as other reads: lastRead " + lastRead + " attempting to add " + read);
             Utils.validateArg( read.getStart() >= lastRead.getStart(), () ->
                     "Attempting to add a read to ActiveRegion out of order w.r.t. other reads: lastRead " + lastRead + " at " + lastRead.getStart() + " attempting to add " + read + " at " + read.getStart());

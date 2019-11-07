@@ -126,7 +126,6 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
 
     @Test(dataProvider = "AssemblyRegionReads")
     public void testAssemblyRegionReads(final SimpleInterval loc, final GATKRead read) throws Exception {
-        final SimpleInterval expectedSpan = loc.mergeWithContiguous(new SimpleInterval(read));
 
         final AssemblyRegion region = new AssemblyRegion(loc, true, 0, header);
         final AssemblyRegion region2 = new AssemblyRegion(loc, true, 0, header);

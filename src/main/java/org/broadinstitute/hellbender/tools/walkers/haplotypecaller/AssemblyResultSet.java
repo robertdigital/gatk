@@ -40,7 +40,6 @@ public final class AssemblyResultSet {
     private SimpleInterval paddedReferenceLoc;
     private boolean variationPresent;
     private Haplotype refHaplotype;
-    private boolean wasTrimmed = false;
     private final SortedSet<Integer>  kmerSizes;
     private SortedSet<VariantContext> variationEvents;
     private OptionalInt lastMaxMnpDistanceUsed = OptionalInt.empty();
@@ -97,7 +96,6 @@ public final class AssemblyResultSet {
         if (result.refHaplotype == null) {
             throw new IllegalStateException("missing reference haplotype in the trimmed set");
         }
-        result.wasTrimmed = true;
         return result;
     }
 
@@ -439,15 +437,6 @@ public final class AssemblyResultSet {
             return null;
         }
         return assemblyResult.getThreadingGraph();
-    }
-
-    /**
-     * Checks whether this assembly result set was trimmed.
-     *
-     * @return {@code true} iff this assembly result set was trimmed.
-     */
-    public boolean wasTrimmed() {
-        return wasTrimmed;
     }
 
     /**
