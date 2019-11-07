@@ -245,9 +245,6 @@ public final class Mutect2 extends AssemblyRegionWalker {
     protected double defaultActiveProbThreshold() { return 0.002; }
 
     @Override
-    protected int defaultMaxProbPropagationDistance() { return 50; }
-
-    @Override
     protected boolean includeReadsWithDeletionsInIsActivePileups() { return true; }
 
     @Override

@@ -173,9 +173,6 @@ public final class HaplotypeCaller extends AssemblyRegionWalker {
     protected double defaultActiveProbThreshold() { return DEFAULT_ACTIVE_PROB_THRESHOLD; }
 
     @Override
-    protected int defaultMaxProbPropagationDistance() { return DEFAULT_MAX_PROB_PROPAGATION_DISTANCE; }
-
-    @Override
     protected boolean includeReadsWithDeletionsInIsActivePileups() { return true; }
 
     @Override

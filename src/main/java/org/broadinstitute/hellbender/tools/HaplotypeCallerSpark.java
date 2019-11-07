@@ -98,9 +98,6 @@ public final class HaplotypeCallerSpark extends AssemblyRegionWalkerSpark {
 
         @Override
         protected double defaultActiveProbThreshold() { return HaplotypeCaller.DEFAULT_ACTIVE_PROB_THRESHOLD; }
-
-        @Override
-        protected int defaultMaxProbPropagationDistance() { return HaplotypeCaller.DEFAULT_MAX_PROB_PROPAGATION_DISTANCE; }
     }
 
     @Override

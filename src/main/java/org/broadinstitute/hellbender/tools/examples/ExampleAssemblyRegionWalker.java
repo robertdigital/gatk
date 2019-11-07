@@ -52,9 +52,6 @@ public final class ExampleAssemblyRegionWalker extends AssemblyRegionWalker {
     protected double defaultActiveProbThreshold() { return 0.002; }
 
     @Override
-    protected int defaultMaxProbPropagationDistance() { return 50; }
-
-    @Override
     protected boolean includeReadsWithDeletionsInIsActivePileups() { return true; }
 
     @Override

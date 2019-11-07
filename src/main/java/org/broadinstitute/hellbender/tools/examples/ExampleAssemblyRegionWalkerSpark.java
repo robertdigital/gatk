@@ -56,9 +56,6 @@ public final class ExampleAssemblyRegionWalkerSpark extends AssemblyRegionWalker
 
         @Override
         protected double defaultActiveProbThreshold() { return 0.002; }
-
-        @Override
-        protected int defaultMaxProbPropagationDistance() { return 50; }
     }
 
     @Override

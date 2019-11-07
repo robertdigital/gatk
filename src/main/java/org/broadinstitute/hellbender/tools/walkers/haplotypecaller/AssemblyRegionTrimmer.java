@@ -12,6 +12,7 @@ import org.broadinstitute.hellbender.utils.Utils;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.SortedSet;
 import java.util.stream.Collectors;
 
@@ -74,11 +75,9 @@ public final class AssemblyRegionTrimmer {
         protected final AssemblyRegion originalRegion;
 
         /**
-         * Holds the smaller range that contain all relevant callable variants in the
-         * input active region (not considering the extension).
-         *
+         * Trimmed interval containing all callable variants in the input active region (not considering the extension).
          */
-        protected final SimpleInterval callableSpan;
+        protected final SimpleInterval variantSpan;
 
         /**
          * The trimmed variant region span including the extension.
@@ -99,66 +98,33 @@ public final class AssemblyRegionTrimmer {
         protected final List<VariantContext> callableEvents;
 
         /**
-         * Holds variant-containing callable region.
-         * <p/>
-         * This is lazy-initialized using {@link #callableSpan}.
-         */
-        protected AssemblyRegion callableRegion;
-
-
-        /**
-         * Non-variant left flank region.
-         * <p/>
-         * This is lazy-initialized using
-         * {@link #nonVariantFlanks}.{@link Pair#getLeft()} () getFirst()}.
-         */
-        private AssemblyRegion leftFlankRegion;
-
-        /**
-         * Non-variant right flank region.
-         * <p/>
-         * This is lazy-initialized using
-         * {@link #nonVariantFlanks}.{@link Pair#getLeft()} () getSecond()}.
-         */
-        private AssemblyRegion rightFlankRegion;
-
-        /**
          * Creates a trimming result given all its properties.
          * @param originalRegion the original active region.
          * @param overlappingEvents contained callable variation events.
          * @param nonVariantFlanks pair of non-variant flank spans around the variant containing span.
          * @param extendedSpan final trimmed variant span including the extension.
-         * @param callableSpan variant containing span without padding.
+         * @param variantSpan variant containing span without padding.
          */
         protected Result(final AssemblyRegion originalRegion,
                          final List<VariantContext> overlappingEvents,
                          final Pair<SimpleInterval, SimpleInterval> nonVariantFlanks,
                          final SimpleInterval extendedSpan,
-                         final SimpleInterval callableSpan) {
+                         final SimpleInterval variantSpan) {
             this.originalRegion = originalRegion;
             this.nonVariantFlanks = nonVariantFlanks;
             callableEvents = overlappingEvents;
-            this.callableSpan = callableSpan;
+            this.variantSpan = variantSpan;
             this.extendedSpan = extendedSpan;
 
-            Utils.validateArg(extendedSpan == null || callableSpan == null || extendedSpan.contains(callableSpan), "the extended callable span must include the callable span");
+            Utils.validateArg(extendedSpan == null || variantSpan == null || extendedSpan.contains(variantSpan), "the extended callable span must include the callable span");
         }
 
-
-        /**
-         * Checks whether there is any variation present in the target region.
-         *
-         * @return {@code true} if there is any variant, {@code false} otherwise.
-         */
         public boolean isVariationPresent() {
-            return ! callableEvents.isEmpty();
+            return !callableEvents.isEmpty();
         }
 
-        /**
-         * Checks whether the active region needs trimming.
-         */
         public boolean needsTrimming() {
-            return hasLeftFlankingRegion() || hasRightFlankingRegion();
+            return nonVariantFlanks.getLeft() != null || nonVariantFlanks.getRight() != null;
         }
 
         /**
@@ -169,56 +135,24 @@ public final class AssemblyRegionTrimmer {
          * @return never {@code null}.
          */
         public AssemblyRegion getCallableRegion() {
-            if (callableRegion == null && extendedSpan != null) {
-                callableRegion = originalRegion.trim(callableSpan, extendedSpan);
-            } else if (extendedSpan == null) {
-                throw new IllegalStateException("there is no variation thus no variant region");
-            }
-            return callableRegion;
-        }
-
-        /**
-         * Checks whether there is a non-empty left flanking non-variant trimmed out region.
-         * @return {@code true} if there is a non-trivial left flank region, {@code false} otherwise.
-         */
-        public boolean hasLeftFlankingRegion() {
-            return nonVariantFlanks.getLeft() != null;
-        }
-
-        /**
-         * Checks whether there is a non-empty right flanking non-variant trimmed out region.
-         * @return {@code true} if there is a non-trivial right flank region, {@code false} otherwise.
-         */
-        public boolean hasRightFlankingRegion() {
-            return nonVariantFlanks.getRight() != null;
+            Utils.validate(isVariationPresent(), "there is no variation thus no variant region");
+            return originalRegion.trim(variantSpan, extendedSpan);
         }
 
         /**
          *  Returns the trimmed out left non-variant region.
-         *  <p/>
-         *  Notice that in case of no variation, the whole original region is considered the left flanking region.
          *
-         *  @throws IllegalStateException if there is not such as left flanking region.
+         *  Notice that in case of no variation, the whole original region is considered the left flanking region.
          */
-        public AssemblyRegion nonVariantLeftFlankRegion() {
-            if (leftFlankRegion == null && nonVariantFlanks.getLeft() != null) {
-                leftFlankRegion = originalRegion.trim(nonVariantFlanks.getLeft(), originalRegion.getExtension());
-            } else if (nonVariantFlanks.getLeft() == null) {
-                throw new IllegalStateException("there is no left flank non-variant trimmed out region");
-            }
-            return leftFlankRegion;
+        public Optional<AssemblyRegion> nonVariantLeftFlankRegion() {
+            return nonVariantFlanks.getLeft() == null ? Optional.empty() : Optional.of(originalRegion.trim(nonVariantFlanks.getLeft(), originalRegion.getExtension()));
         }
 
         /**
          *  Returns the trimmed out right non-variant region.
          */
-        public AssemblyRegion nonVariantRightFlankRegion() {
-            if (rightFlankRegion == null && nonVariantFlanks.getRight() != null) {
-                rightFlankRegion = originalRegion.trim(nonVariantFlanks.getRight(), originalRegion.getExtension());
-            } else if (nonVariantFlanks.getRight() == null) {
-                throw new IllegalStateException("there is no right flank non-variant trimmed out region");
-            }
-            return rightFlankRegion;
+        public Optional<AssemblyRegion> nonVariantRightFlankRegion() {
+            return nonVariantFlanks.getRight() == null ? Optional.empty() : Optional.of(originalRegion.trim(nonVariantFlanks.getRight(), originalRegion.getExtension()));
         }
 
         /**
@@ -227,7 +161,6 @@ public final class AssemblyRegionTrimmer {
         protected static Result noTrimming(final AssemblyRegion region, final List<VariantContext> events) {
             final SimpleInterval targetRegionLoc = region.getSpan();
             final Result result = new Result(region, events,Pair.of(null, null), targetRegionLoc, targetRegionLoc);
-            result.callableRegion = region;
             return result;
         }
 
@@ -236,7 +169,6 @@ public final class AssemblyRegionTrimmer {
          */
         protected static Result noVariation(final AssemblyRegion region) {
             final Result result = new Result(region, Collections.emptyList(), Pair.of(region.getSpan(), null), null, null);
-            result.leftFlankRegion = region;
             return result;
         }
     }
@@ -249,10 +181,6 @@ public final class AssemblyRegionTrimmer {
      * @return never {@code null}.
      */
     public Result trim(final AssemblyRegion region, final SortedSet<VariantContext> variants) {
-        if ( variants.isEmpty() ) {
-            return Result.noVariation(region);
-        }
-
         final List<VariantContext> variantsInRegion = variants.stream().filter(region::overlaps).collect(Collectors.toList());
 
         if ( variantsInRegion.isEmpty() ) {
@@ -272,7 +200,7 @@ public final class AssemblyRegionTrimmer {
         if ( debug ) {
             logger.info("events       : " + variantsInRegion);
             logger.info("region       : " + region);
-            logger.info("callableSpan : " + callableSpan);
+            logger.info("variantSpan : " + callableSpan);
             logger.info("paddedSpan    : " + paddedVariantSpan);
         }
 
