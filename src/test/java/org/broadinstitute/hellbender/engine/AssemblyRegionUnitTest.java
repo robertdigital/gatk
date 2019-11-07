@@ -73,8 +73,6 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
         Assert.assertEquals(region.getSpan(), loc);
         Assert.assertEquals(region.getExtendedSpan().getStart(), Math.max(loc.getStart() - extension, 1));
         Assert.assertEquals(region.getExtendedSpan().getEnd(), Math.min(loc.getEnd() + extension, contigLength));
-        Assert.assertEquals(region.getReadSpanLoc().getStart(), Math.max(loc.getStart() - extension, 1));
-        Assert.assertEquals(region.getReadSpanLoc().getEnd(), Math.min(loc.getEnd() + extension, contigLength));
         Assert.assertEquals(region.isActive(), isActive);
         Assert.assertEquals(region.getExtension(), extension);
         Assert.assertEquals(region.getReads(), Collections.emptyList());
@@ -135,42 +133,36 @@ public final class AssemblyRegionUnitTest extends GATKBaseTest {
         Assert.assertEquals(region.getReads(), Collections.emptyList());
         Assert.assertEquals(region.size(), 0);
         Assert.assertEquals(region.getExtendedSpan(), loc);
-        Assert.assertEquals(region.getReadSpanLoc(), loc);
         Assert.assertTrue(region.equalsIgnoreReads(region2));
 
         region.add(read);
         Assert.assertEquals(region.getReads(), Collections.singletonList(read));
         Assert.assertEquals(region.size(), 1);
         Assert.assertEquals(region.getExtendedSpan(), loc);
-        Assert.assertEquals(region.getReadSpanLoc(), expectedSpan);
         Assert.assertTrue(region.equalsIgnoreReads(region2));
 
         region.clearReads();
         Assert.assertEquals(region.getReads(), Collections.emptyList());
         Assert.assertEquals(region.size(), 0);
         Assert.assertEquals(region.getExtendedSpan(), loc);
-        Assert.assertEquals(region.getReadSpanLoc(), loc);
         Assert.assertTrue(region.equalsIgnoreReads(region2));
 
         region.addAll(Collections.singleton(read));
         Assert.assertEquals(region.getReads(), Collections.singletonList(read));
         Assert.assertEquals(region.size(), 1);
         Assert.assertEquals(region.getExtendedSpan(), loc);
-        Assert.assertEquals(region.getReadSpanLoc(), expectedSpan);
         Assert.assertTrue(region.equalsIgnoreReads(region2));
 
         region.removeAll(Collections.<GATKRead>emptySet());
         Assert.assertEquals(region.getReads(), Collections.singletonList(read));
         Assert.assertEquals(region.size(), 1);
         Assert.assertEquals(region.getExtendedSpan(), loc);
-        Assert.assertEquals(region.getReadSpanLoc(), expectedSpan);
         Assert.assertTrue(region.equalsIgnoreReads(region2));
 
         region.removeAll(Collections.singleton(read));
         Assert.assertEquals(region.getReads(), Collections.emptyList());
         Assert.assertEquals(region.size(), 0);
         Assert.assertEquals(region.getExtendedSpan(), loc);
-        Assert.assertEquals(region.getReadSpanLoc(), loc);
         Assert.assertTrue(region.equalsIgnoreReads(region2));
 
         final GATKRead read2 = read.copy();

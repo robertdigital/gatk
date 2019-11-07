@@ -48,15 +48,6 @@ public final class AssemblyRegion implements Locatable {
     private boolean isActive;
 
     /**
-     * The span of this assembly region, including the bp covered by all reads in this
-     * region.  This union of extensionLoc and the loc of all reads in this region.
-     *
-     * Must be at least as large as extendedLoc, but may be larger when reads
-     * partially overlap this region.
-     */
-    private SimpleInterval spanIncludingReads;
-
-    /**
      * Indicates whether the region has been finalized
      */
     private boolean hasBeenFinalized;
@@ -78,7 +69,6 @@ public final class AssemblyRegion implements Locatable {
         this.extension = extension;
         final String contig = activeRegionLoc.getContig();
         extendedLoc = IntervalUtils.trimIntervalToContig(contig, activeRegionLoc.getStart() - extension, activeRegionLoc.getEnd() + extension, this.header.getSequence(contig).getSequenceLength());
-        spanIncludingReads = extendedLoc;
     }
 
     @Override
@@ -255,8 +245,6 @@ public final class AssemblyRegion implements Locatable {
         Utils.validateArg(readOverlapsRegion(read), () ->
                 "Read location " + readLoc + " doesn't overlap with active region extended span " + extendedLoc);
 
-        spanIncludingReads = spanIncludingReads.mergeWithContiguous( readLoc );
-
         if ( ! reads.isEmpty() ) {
             final GATKRead lastRead = reads.get(size() - 1);
             Utils.validateArg(Objects.equals(lastRead.getContig(), read.getContig()), () ->
@@ -278,7 +266,6 @@ public final class AssemblyRegion implements Locatable {
      * Clear all of the reads currently in this region
      */
     public void clearReads() {
-        spanIncludingReads = extendedLoc;
         reads.clear();
     }
 
@@ -289,10 +276,6 @@ public final class AssemblyRegion implements Locatable {
     public void removeAll( final Collection<GATKRead> readsToRemove ) {
         Utils.nonNull(readsToRemove);
         reads.removeAll(readsToRemove);
-        spanIncludingReads = extendedLoc;
-        for (final GATKRead read : reads) {
-            spanIncludingReads = spanIncludingReads.mergeWithContiguous(read);
-        }
     }
 
     /**
@@ -311,17 +294,6 @@ public final class AssemblyRegion implements Locatable {
      * @return the size in bp of the region extension
      */
     public int getExtension() { return extension; }
-
-    /**
-     * The span of this assembly region, including the bp covered by all reads in this
-     * region.  This union of extensionLoc and the loc of all reads in this region.
-     *
-     * Must be at least as large as extendedLoc, but may be larger when reads
-     * partially overlap this region.
-     */
-    public SimpleInterval getReadSpanLoc() {
-        return spanIncludingReads;
-    }
 
     /**
      * Get the reference bases from referenceReader spanned by the extended location of this region,
