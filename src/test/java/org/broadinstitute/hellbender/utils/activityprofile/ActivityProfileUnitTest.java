@@ -110,7 +110,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
         }
         Assert.assertEquals(genomeLocParser.createGenomeLoc(profile.regionStartLoc), genomeLocParser.createGenomeLoc(cfg.regionStart.getContig(), cfg.regionStart.getStart(), cfg.regionStart.getStart() ), "Start loc should be the start of the region");
 
-        Assert.assertEquals(profile.size(), cfg.probs.size(), "Should have exactly the number of states we expected to add");
+        Assert.assertEquals(profile.stateList.size(), cfg.probs.size(), "Should have exactly the number of states we expected to add");
         assertProbsAreEqual(profile.stateList, cfg.probs);
 
         // TODO -- reanble tests
