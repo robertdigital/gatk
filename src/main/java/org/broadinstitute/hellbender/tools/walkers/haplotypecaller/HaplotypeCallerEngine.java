@@ -541,7 +541,8 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
         }
 
         // run the local assembler, getting back a collection of information on how we should proceed
-        final AssemblyResultSet untrimmedAssemblyResult =  AssemblyBasedCallerUtils.assembleReads(region, givenAlleles, hcArgs, readsHeader, samplesList, logger, referenceReader, assemblyEngine, aligner, !hcArgs.doNotCorrectOverlappingBaseQualities);
+        final AssemblyResultSet untrimmedAssemblyResult =  AssemblyBasedCallerUtils.assembleReads(region, givenAlleles, hcArgs,
+                readsHeader, samplesList, logger, referenceReader, assemblyEngine, aligner, !hcArgs.doNotCorrectOverlappingBaseQualities, ReadFilterLibrary.ALLOW_ALL_READS);
 
         if (assemblyDebugOutStream != null) {
             assemblyDebugOutStream.println("\nThere were " + untrimmedAssemblyResult.getHaplotypeList().size() + " haplotypes found. Here they are:");

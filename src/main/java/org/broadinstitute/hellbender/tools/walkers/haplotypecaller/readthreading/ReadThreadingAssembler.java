@@ -8,6 +8,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.broadinstitute.gatk.nativebindings.smithwaterman.SWOverhangStrategy;
 import org.broadinstitute.hellbender.engine.AssemblyRegion;
+import org.broadinstitute.hellbender.engine.filters.ReadFilter;
+import org.broadinstitute.hellbender.engine.filters.ReadFilterLibrary;
 import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.AssemblyResult;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.AssemblyResultSet;
@@ -26,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public final class ReadThreadingAssembler {
     private static final Logger logger = LogManager.getLogger(ReadThreadingAssembler.class);
@@ -103,6 +106,7 @@ public final class ReadThreadingAssembler {
      * @param refLoc                    GenomeLoc object corresponding to the reference sequence with padding
      * @param readErrorCorrector        a ReadErrorCorrector object, if read are to be corrected before assembly. Can be null if no error corrector is to be used.
      * @param aligner                   {@link SmithWatermanAligner} used to align dangling ends in assembly graphs to the reference sequence
+     * @param readFilter
      * @return                          the resulting assembly-result-set
      */
     public AssemblyResultSet runLocalAssembly(final AssemblyRegion assemblyRegion,
@@ -111,7 +115,8 @@ public final class ReadThreadingAssembler {
                                               final SimpleInterval refLoc,
                                               final ReadErrorCorrector readErrorCorrector,
                                               final SAMFileHeader header,
-                                              final SmithWatermanAligner aligner) {
+                                              final SmithWatermanAligner aligner,
+                                              final ReadFilter readFilter) {
         Utils.nonNull(assemblyRegion, "Assembly engine cannot be used with a null AssemblyRegion.");
         Utils.nonNull(assemblyRegion.getExtendedSpan(), "Active region must have an extended location.");
         Utils.nonNull(refHaplotype, "Reference haplotype cannot be null.");
@@ -121,16 +126,19 @@ public final class ReadThreadingAssembler {
         Utils.validateArg( fullReferenceWithPadding.length == refLoc.size(), "Reference bases and reference loc must be the same size.");
         ParamUtils.isPositiveOrZero(pruneFactor, "Pruning factor cannot be negative");
 
+        final List<GATKRead> filteredReads = readFilter == ReadFilterLibrary.ALLOW_ALL_READS ? assemblyRegion.getReads()
+                : assemblyRegion.getReads().stream().filter(readFilter).collect(Collectors.toList());
+
         // error-correct reads before clipping low-quality tails: some low quality bases might be good and we want to recover them
         final List<GATKRead> correctedReads;
         if ( readErrorCorrector != null ) {
             // now correct all reads in active region after filtering/downsampling
             // Note that original reads in active region are NOT modified by default, since they will be used later for GL computation,
             // and we only want the read-error corrected reads for graph building.
-            readErrorCorrector.addReadsToKmers(assemblyRegion.getReads());
-            correctedReads = new ArrayList<>(readErrorCorrector.correctReads(assemblyRegion.getReads()));
+            readErrorCorrector.addReadsToKmers(filteredReads);
+            correctedReads = new ArrayList<>(readErrorCorrector.correctReads(filteredReads));
         } else {
-            correctedReads = assemblyRegion.getReads();
+            correctedReads = filteredReads;
         }
 
         final List<AbstractReadThreadingGraph> nonRefRTGraphs = new LinkedList<>();

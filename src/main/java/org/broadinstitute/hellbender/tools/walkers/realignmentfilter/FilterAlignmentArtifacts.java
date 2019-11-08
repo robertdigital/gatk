@@ -22,6 +22,7 @@ import org.broadinstitute.hellbender.engine.ReadsContext;
 import org.broadinstitute.hellbender.engine.ReferenceContext;
 import org.broadinstitute.hellbender.engine.filters.CountingVariantFilter;
 import org.broadinstitute.hellbender.engine.filters.ReadFilter;
+import org.broadinstitute.hellbender.engine.filters.ReadFilterLibrary;
 import org.broadinstitute.hellbender.engine.filters.VariantFilterLibrary;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.AssemblyBasedCallerArgumentCollection;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.AssemblyBasedCallerUtils;
@@ -210,7 +211,8 @@ public class FilterAlignmentArtifacts extends MultiVariantWalkerGroupedOnStart {
 
 
             // TODO: give this tool M2 Assembler args to allow override default M2ArgumentCollection?
-            final AssemblyResultSet assemblyResult = AssemblyBasedCallerUtils.assembleReads(assemblyRegion, Collections.emptyList(), MTAC, bamHeader, samplesList, logger, referenceReader, assemblyEngine, ALIGNER, false);
+            final AssemblyResultSet assemblyResult = AssemblyBasedCallerUtils.assembleReads(assemblyRegion, Collections.emptyList(),
+                    MTAC, bamHeader, samplesList, logger, referenceReader, assemblyEngine, ALIGNER, false, ReadFilterLibrary.ALLOW_ALL_READS);
             final AssemblyRegion regionForGenotyping = assemblyResult.getRegionForGenotyping();
 
             final Map<String,List<GATKRead>> reads = AssemblyBasedCallerUtils.splitReadsBySample(samplesList, bamHeader, regionForGenotyping.getReads());

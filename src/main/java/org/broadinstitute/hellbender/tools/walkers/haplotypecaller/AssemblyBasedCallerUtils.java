@@ -14,6 +14,7 @@ import org.apache.logging.log4j.Logger;
 import org.broadinstitute.gatk.nativebindings.smithwaterman.SWOverhangStrategy;
 import org.broadinstitute.hellbender.engine.AlignmentContext;
 import org.broadinstitute.hellbender.engine.AssemblyRegion;
+import org.broadinstitute.hellbender.engine.filters.ReadFilter;
 import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.walkers.ReferenceConfidenceVariantContextMerger;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.readthreading.ReadThreadingAssembler;
@@ -228,18 +229,6 @@ public final class AssemblyBasedCallerUtils {
                 Optional.empty();
     }
 
-    // create the assembly using just high quality reads (eg Q20 or higher).  We may want to use lower
-    // quality reads in the PairHMM downstream, so we can't use a ReadFilter
-    public static AssemblyRegion assemblyRegionWithWellMappedReads(final AssemblyRegion originalAssemblyRegion,
-                                                                   final int minMappingQuality,
-                                                                   final SAMFileHeader readsHeader) {
-        final AssemblyRegion result = new AssemblyRegion(originalAssemblyRegion, originalAssemblyRegion.isActive(), originalAssemblyRegion.getExtension(), readsHeader);
-        originalAssemblyRegion.getReads().stream()
-                .filter(rec -> rec.getMappingQuality() >= minMappingQuality)
-                .forEach(result::add);
-        return result;
-    }
-
     // Contract: the List<Allele> alleles of the resulting VariantContext is the ref allele followed by alt alleles in the
     // same order as in the input vcs
     public static VariantContext makeMergedVariantContext(final List<VariantContext> vcs) {
@@ -267,7 +256,8 @@ public final class AssemblyBasedCallerUtils {
                                                   final ReferenceSequenceFile referenceReader,
                                                   final ReadThreadingAssembler assemblyEngine,
                                                   final SmithWatermanAligner aligner,
-                                                  final boolean correctOverlappingBaseQualities){
+                                                  final boolean correctOverlappingBaseQualities,
+                                                  final ReadFilter readFilter){
         finalizeRegion(region, argumentCollection.assemblerArgs.errorCorrectReads, argumentCollection.dontUseSoftClippedBases, (byte)(argumentCollection.minBaseQualityScore - 1), header, sampleList, correctOverlappingBaseQualities);
         if( argumentCollection.assemblerArgs.debugAssembly) {
             logger.info("Assembling " + region.getSpan() + " with " + region.size() + " reads:    (with overlap region = " + region.getExtendedSpan() + ")");
@@ -287,7 +277,7 @@ public final class AssemblyBasedCallerUtils {
 
         try {
             final AssemblyResultSet assemblyResultSet = assemblyEngine.runLocalAssembly(region, refHaplotype, fullReferenceWithPadding,
-                    paddedReferenceLoc, readErrorCorrector, header, aligner);
+                    paddedReferenceLoc, readErrorCorrector, header, aligner, readFilter);
             if (!givenAlleles.isEmpty()) {
                 addGivenAlleles(region.getExtendedSpan().getStart(), givenAlleles, argumentCollection.maxMnpDistance, aligner, refHaplotype, assemblyResultSet);
             }

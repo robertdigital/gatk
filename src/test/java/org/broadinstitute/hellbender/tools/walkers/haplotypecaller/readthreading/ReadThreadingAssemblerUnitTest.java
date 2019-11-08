@@ -10,6 +10,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.broadinstitute.hellbender.GATKBaseTest;
 import org.broadinstitute.hellbender.engine.AssemblyRegion;
+import org.broadinstitute.hellbender.engine.filters.ReadFilterLibrary;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.AssemblyResultSet;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.graphs.*;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
@@ -175,7 +176,7 @@ public final class ReadThreadingAssemblerUnitTest extends GATKBaseTest {
         activeRegion.addAll(reads);
 //        logger.warn("Assembling " + activeRegion + " with " + engine);
         final AssemblyResultSet assemblyResultSet =  assembler.runLocalAssembly(activeRegion, refHaplotype, refBases, loc, null, header,
-                                                                                SmithWatermanJavaAligner.getInstance());
+                                                                                SmithWatermanJavaAligner.getInstance(), ReadFilterLibrary.ALLOW_ALL_READS);
         return assemblyResultSet.getHaplotypeList();
     }
 

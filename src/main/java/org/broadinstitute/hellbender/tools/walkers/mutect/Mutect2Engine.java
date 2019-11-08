@@ -207,34 +207,34 @@ public final class Mutect2Engine implements AssemblyRegionEvaluator {
         vcfWriter.writeHeader(vcfHeader);
     }
 
-    public List<VariantContext> callRegion(final AssemblyRegion originalAssemblyRegion, final ReferenceContext referenceContext, final FeatureContext featureContext ) {
+    public List<VariantContext> callRegion(final AssemblyRegion region, final ReferenceContext referenceContext, final FeatureContext featureContext ) {
         // divide PCR qual by two in order to get the correct total qual when treating paired reads as independent
-        AssemblyBasedCallerUtils.cleanOverlappingReadPairs(originalAssemblyRegion.getReads(), samplesList, header,
+        AssemblyBasedCallerUtils.cleanOverlappingReadPairs(region.getReads(), samplesList, header,
                 false, OptionalInt.of(MTAC.pcrSnvQual /2), OptionalInt.of(MTAC.pcrIndelQual /2));
 
-        if ( !originalAssemblyRegion.isActive()) {
-            return emitReferenceConfidence() ? referenceModelForNoVariation(originalAssemblyRegion) : NO_CALLS;  //TODO: does this need to be finalized?
+        if ( !region.isActive()) {
+            return emitReferenceConfidence() ? referenceModelForNoVariation(region) : NO_CALLS;  //TODO: does this need to be finalized?
         }
 
-        removeUnmarkedDuplicates(originalAssemblyRegion);
+        removeUnmarkedDuplicates(region);
 
         final List<VariantContext> givenAlleles = featureContext.getValues(MTAC.alleles).stream()
                 .filter(vc -> MTAC.forceCallFiltered || vc.isNotFiltered()).collect(Collectors.toList());
 
-        final AssemblyRegion assemblyActiveRegion = AssemblyBasedCallerUtils.assemblyRegionWithWellMappedReads(originalAssemblyRegion, READ_QUALITY_FILTER_THRESHOLD, header);
-        final AssemblyResultSet untrimmedAssemblyResult = AssemblyBasedCallerUtils.assembleReads(assemblyActiveRegion, givenAlleles, MTAC, header, samplesList, logger, referenceReader, assemblyEngine, aligner, false);
+        final AssemblyResultSet untrimmedAssemblyResult = AssemblyBasedCallerUtils.assembleReads(region, givenAlleles,
+                MTAC, header, samplesList, logger, referenceReader, assemblyEngine, aligner, false, new MappingQualityReadFilter(READ_QUALITY_FILTER_THRESHOLD));
 
         final SortedSet<VariantContext> allVariationEvents = untrimmedAssemblyResult.getVariationEvents(MTAC.maxMnpDistance);
-        final AssemblyRegionTrimmer.Result trimmingResult = trimmer.trim(originalAssemblyRegion, allVariationEvents);
+        final AssemblyRegionTrimmer.Result trimmingResult = trimmer.trim(region, allVariationEvents);
         if (!trimmingResult.isVariationPresent()) {
-            return emitReferenceConfidence() ? referenceModelForNoVariation(originalAssemblyRegion) : NO_CALLS;
+            return emitReferenceConfidence() ? referenceModelForNoVariation(region) : NO_CALLS;
         }
 
         final AssemblyResultSet trimmedAssemblyResult = trimmingResult.trimAssemblyResult(untrimmedAssemblyResult);
 
         // we might find out after assembly that the "active" region actually has no variants
         if( ! trimmedAssemblyResult.isVariationPresent() ) {
-            return emitReferenceConfidence() ? referenceModelForNoVariation(originalAssemblyRegion) : NO_CALLS;
+            return emitReferenceConfidence() ? referenceModelForNoVariation(region) : NO_CALLS;
         }
 
         final AssemblyRegion regionForGenotyping = trimmedAssemblyResult.getRegionForGenotyping();
@@ -254,7 +254,7 @@ public final class Mutect2Engine implements AssemblyRegionEvaluator {
         if (emitReferenceConfidence()) {
             if ( !containsCalls(calledHaplotypes) ) {
                 // no called all of the potential haplotypes
-                return referenceModelForNoVariation(assemblyActiveRegion);
+                return referenceModelForNoVariation(region);
             }
             else {
                 final List<VariantContext> result = new LinkedList<>();
