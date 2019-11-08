@@ -48,7 +48,7 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
 
     /**
      * Constructs an AssemblyRegionIterator over a provided read shard
-     *  @param readShard MultiIntervalShard containing the reads that will go into the assembly regions.
+     * @param readShard MultiIntervalShard containing the reads that will go into the assembly regions.
      *                  Must have a MAPPED filter set on it.
      * @param readHeader header for the reads
      * @param reference source of reference bases (may be null)
@@ -67,8 +67,7 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
                                   final int minRegionSize,
                                   final int maxRegionSize,
                                   final int assemblyRegionPadding,
-                                  final double activeProbThreshold,
-                                  final boolean includeReadsWithDeletionsInIsActivePileups) {
+                                  final double activeProbThreshold) {
 
         Utils.nonNull(readShard);
         Utils.nonNull(readHeader);
@@ -96,7 +95,7 @@ public class AssemblyRegionIterator implements Iterator<AssemblyRegion> {
 
         // We wrap our LocusIteratorByState inside an IntervalAlignmentContextIterator so that we get empty loci
         // for uncovered locations. This is critical for reproducing GATK 3.x behavior!
-        this.libs = new LocusIteratorByState(readCachingIterator, DownsamplingMethod.NONE, false, ReadUtils.getSamplesFromHeader(readHeader), readHeader, includeReadsWithDeletionsInIsActivePileups);
+        this.libs = new LocusIteratorByState(readCachingIterator, DownsamplingMethod.NONE, false, ReadUtils.getSamplesFromHeader(readHeader), readHeader);
         final IntervalLocusIterator intervalLocusIterator = new IntervalLocusIterator(readShard.getIntervals().iterator());
         this.locusIterator = new IntervalAlignmentContextIterator(libs, intervalLocusIterator, readHeader.getSequenceDictionary());
 

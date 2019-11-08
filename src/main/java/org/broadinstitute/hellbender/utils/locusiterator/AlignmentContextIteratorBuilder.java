@@ -133,7 +133,7 @@ public class AlignmentContextIteratorBuilder {
                 .collect(Collectors.toSet());
 
         // get the LIBS
-        final LocusIteratorByState libs = new LocusIteratorByState(readIterator, downsamplingInfo, isKeepUniqueReadListInLibs, samples, header, isIncludeDeletions, isIncludeNs);
+        final LocusIteratorByState libs = new LocusIteratorByState(readIterator, downsamplingInfo, isKeepUniqueReadListInLibs, samples, header, isIncludeNs);
 
         List<SimpleInterval> finalIntervals = intervalsForTraversal;
         validateEmitEmptyLociParameters(emitEmptyLoci, dictionary, intervalsForTraversal, isReference);

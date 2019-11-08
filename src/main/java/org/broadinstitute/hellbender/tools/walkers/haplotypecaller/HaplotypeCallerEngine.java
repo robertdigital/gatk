@@ -557,10 +557,9 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
             return referenceModelForNoVariation(region, false, VCpriors);
         }
 
-        final AssemblyResultSet assemblyResult =
-                trimmingResult.needsTrimming() ? untrimmedAssemblyResult.trimTo(trimmingResult.getCallableRegion()) : untrimmedAssemblyResult;
+        final AssemblyResultSet trimmedAssemblyResult = trimmingResult.trimAssemblyResult(untrimmedAssemblyResult);
 
-        final AssemblyRegion regionForGenotyping = assemblyResult.getRegionForGenotyping();
+        final AssemblyRegion regionForGenotyping = trimmedAssemblyResult.getRegionForGenotyping();
         final List<GATKRead> readStubs = regionForGenotyping.getReads().stream()
                 .filter(r -> r.getLength() < AssemblyBasedCallerUtils.MINIMUM_READ_LENGTH_AFTER_TRIMMING).collect(Collectors.toList());
         regionForGenotyping.removeAll(readStubs);
@@ -575,7 +574,7 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
 
         // abort early if something is out of the acceptable range
         // TODO is this ever true at this point??? perhaps GGA. Need to check.
-        if( ! assemblyResult.isVariationPresent() && ! hcArgs.disableOptimizations ) {
+        if( ! trimmedAssemblyResult.isVariationPresent() && ! hcArgs.disableOptimizations ) {
             return referenceModelForNoVariation(region, false, VCpriors);
         }
 
@@ -591,15 +590,15 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
         }
 
         // evaluate each sample's reads against all haplotypes
-        final List<Haplotype> haplotypes = assemblyResult.getHaplotypeList();
+        final List<Haplotype> haplotypes = trimmedAssemblyResult.getHaplotypeList();
         final Map<String,List<GATKRead>> reads = AssemblyBasedCallerUtils.splitReadsBySample(samplesList, readsHeader, regionForGenotyping.getReads());
 
         // Calculate the likelihoods: CPU intensive part.
         final AlleleLikelihoods<GATKRead, Haplotype> readLikelihoods =
-                likelihoodCalculationEngine.computeReadLikelihoods(assemblyResult, samplesList, reads);
+                likelihoodCalculationEngine.computeReadLikelihoods(trimmedAssemblyResult, samplesList, reads);
 
         // Realign reads to their best haplotype.
-        final Map<GATKRead, GATKRead> readRealignments = AssemblyBasedCallerUtils.realignReadsToTheirBestHaplotype(readLikelihoods, assemblyResult.getReferenceHaplotype(), assemblyResult.getPaddedReferenceLoc(), aligner);
+        final Map<GATKRead, GATKRead> readRealignments = AssemblyBasedCallerUtils.realignReadsToTheirBestHaplotype(readLikelihoods, trimmedAssemblyResult.getReferenceHaplotype(), trimmedAssemblyResult.getPaddedReferenceLoc(), aligner);
         readLikelihoods.changeEvidence(readRealignments);
 
         // Note: we used to subset down at this point to only the "best" haplotypes in all samples for genotyping, but there
@@ -612,8 +611,8 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
                 haplotypes,
                 readLikelihoods,
                 perSampleFilteredReadList,
-                assemblyResult.getFullReferenceWithPadding(),
-                assemblyResult.getPaddedReferenceLoc(),
+                trimmedAssemblyResult.getFullReferenceWithPadding(),
+                trimmedAssemblyResult.getPaddedReferenceLoc(),
                 regionForGenotyping,
                 features,
                 givenAlleles,
@@ -625,9 +624,9 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
         if ( haplotypeBAMWriter.isPresent() ) {
             final Set<Haplotype> calledHaplotypeSet = new HashSet<>(calledHaplotypes.getCalledHaplotypes());
             if ( hcArgs.disableOptimizations ) {
-                calledHaplotypeSet.add(assemblyResult.getReferenceHaplotype());
+                calledHaplotypeSet.add(trimmedAssemblyResult.getReferenceHaplotype());
             }
-            haplotypeBAMWriter.get().writeReadsAlignedToHaplotypes(haplotypes, assemblyResult.getPaddedReferenceLoc(), haplotypes,
+            haplotypeBAMWriter.get().writeReadsAlignedToHaplotypes(haplotypes, trimmedAssemblyResult.getPaddedReferenceLoc(), haplotypes,
                                                              calledHaplotypeSet, readLikelihoods,regionForGenotyping);
         }
 
@@ -645,8 +644,8 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
                 // output left-flanking non-variant section, then the variant region, then the right-flanking non-variant section
                 trimmingResult.nonVariantLeftFlankRegion().ifPresent(flank -> result.addAll(referenceModelForNoVariation(flank, false, VCpriors)));
 
-                result.addAll(referenceConfidenceModel.calculateRefConfidence(assemblyResult.getReferenceHaplotype(),
-                        calledHaplotypes.getCalledHaplotypes(), assemblyResult.getPaddedReferenceLoc(), regionForGenotyping,
+                result.addAll(referenceConfidenceModel.calculateRefConfidence(trimmedAssemblyResult.getReferenceHaplotype(),
+                        calledHaplotypes.getCalledHaplotypes(), trimmedAssemblyResult.getPaddedReferenceLoc(), regionForGenotyping,
                         readLikelihoods, genotypingEngine.getPloidyModel(), calledHaplotypes.getCalls(), hcArgs.standardArgs.genotypeArgs.supportVariants != null,
                         VCpriors));
 

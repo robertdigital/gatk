@@ -5,7 +5,6 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.broadinstitute.barclay.argparser.Argument;
-import org.broadinstitute.barclay.argparser.ArgumentCollection;
 import org.broadinstitute.barclay.argparser.CommandLineProgramProperties;
 import org.broadinstitute.hellbender.cmdline.StandardArgumentDefinitions;
 import org.broadinstitute.hellbender.cmdline.programgroups.ExampleProgramGroup;
@@ -61,11 +60,6 @@ public final class ExampleAssemblyRegionWalkerSpark extends AssemblyRegionWalker
     @Override
     protected AssemblyRegionArgumentCollection getAssemblyRegionArgumentCollection() {
         return new ExampleAssemblyRegionArgumentCollection();
-    }
-
-    @Override
-    protected boolean includeReadsWithDeletionsInIsActivePileups() {
-        return true;
     }
 
     @Override

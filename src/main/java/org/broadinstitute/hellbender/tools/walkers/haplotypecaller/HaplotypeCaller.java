@@ -143,7 +143,7 @@ public final class HaplotypeCaller extends AssemblyRegionWalker {
     public static final int DEFAULT_ASSEMBLY_REGION_PADDING = 100;
     public static final int DEFAULT_MAX_READS_PER_ALIGNMENT = 50;
     public static final double DEFAULT_ACTIVE_PROB_THRESHOLD = 0.002;
-    public static final int DEFAULT_MAX_PROB_PROPAGATION_DISTANCE = 50;
+
     @ArgumentCollection
     private HaplotypeCallerArgumentCollection hcArgs = new HaplotypeCallerArgumentCollection();
 
@@ -171,9 +171,6 @@ public final class HaplotypeCaller extends AssemblyRegionWalker {
 
     @Override
     protected double defaultActiveProbThreshold() { return DEFAULT_ACTIVE_PROB_THRESHOLD; }
-
-    @Override
-    protected boolean includeReadsWithDeletionsInIsActivePileups() { return true; }
 
     @Override
     public List<ReadFilter> getDefaultReadFilters() {

@@ -229,28 +229,27 @@ public final class Mutect2Engine implements AssemblyRegionEvaluator {
             return emitReferenceConfidence() ? referenceModelForNoVariation(originalAssemblyRegion) : NO_CALLS;
         }
 
-        final AssemblyResultSet assemblyResult =
-                trimmingResult.needsTrimming() ? untrimmedAssemblyResult.trimTo(trimmingResult.getCallableRegion()) : untrimmedAssemblyResult;
+        final AssemblyResultSet trimmedAssemblyResult = trimmingResult.trimAssemblyResult(untrimmedAssemblyResult);
 
         // we might find out after assembly that the "active" region actually has no variants
-        if( ! assemblyResult.isVariationPresent() ) {
+        if( ! trimmedAssemblyResult.isVariationPresent() ) {
             return emitReferenceConfidence() ? referenceModelForNoVariation(originalAssemblyRegion) : NO_CALLS;
         }
 
-        final AssemblyRegion regionForGenotyping = assemblyResult.getRegionForGenotyping();
+        final AssemblyRegion regionForGenotyping = trimmedAssemblyResult.getRegionForGenotyping();
         removeReadStubs(regionForGenotyping);
 
         final Map<String,List<GATKRead>> reads = splitReadsBySample( regionForGenotyping.getReads() );
 
-        final AlleleLikelihoods<GATKRead, Haplotype> readLikelihoods = likelihoodCalculationEngine.computeReadLikelihoods(assemblyResult,samplesList,reads);
+        final AlleleLikelihoods<GATKRead, Haplotype> readLikelihoods = likelihoodCalculationEngine.computeReadLikelihoods(trimmedAssemblyResult,samplesList,reads);
         readLikelihoods.switchToNaturalLog();
 
-        final Map<GATKRead,GATKRead> readRealignments = AssemblyBasedCallerUtils.realignReadsToTheirBestHaplotype(readLikelihoods, assemblyResult.getReferenceHaplotype(), assemblyResult.getPaddedReferenceLoc(), aligner);
+        final Map<GATKRead,GATKRead> readRealignments = AssemblyBasedCallerUtils.realignReadsToTheirBestHaplotype(readLikelihoods, trimmedAssemblyResult.getReferenceHaplotype(), trimmedAssemblyResult.getPaddedReferenceLoc(), aligner);
         readLikelihoods.changeEvidence(readRealignments);
 
         final CalledHaplotypes calledHaplotypes = genotypingEngine.callMutations(
-                readLikelihoods, assemblyResult, referenceContext, regionForGenotyping, featureContext, givenAlleles, header, haplotypeBAMWriter.isPresent(), emitReferenceConfidence());
-        writeBamOutput(assemblyResult, readLikelihoods, calledHaplotypes, regionForGenotyping);
+                readLikelihoods, trimmedAssemblyResult, referenceContext, regionForGenotyping, featureContext, givenAlleles, header, haplotypeBAMWriter.isPresent(), emitReferenceConfidence());
+        writeBamOutput(trimmedAssemblyResult, readLikelihoods, calledHaplotypes, regionForGenotyping);
         if (emitReferenceConfidence()) {
             if ( !containsCalls(calledHaplotypes) ) {
                 // no called all of the potential haplotypes
@@ -262,8 +261,8 @@ public final class Mutect2Engine implements AssemblyRegionEvaluator {
                 // output left-flanking non-variant section, then the variant region, then the right-flanking non-variant section
                 trimmingResult.nonVariantLeftFlankRegion().ifPresent(flank -> result.addAll(referenceModelForNoVariation(flank)));
 
-                result.addAll(referenceConfidenceModel.calculateRefConfidence(assemblyResult.getReferenceHaplotype(),
-                        calledHaplotypes.getCalledHaplotypes(), assemblyResult.getPaddedReferenceLoc(), regionForGenotyping,
+                result.addAll(referenceConfidenceModel.calculateRefConfidence(trimmedAssemblyResult.getReferenceHaplotype(),
+                        calledHaplotypes.getCalledHaplotypes(), trimmedAssemblyResult.getPaddedReferenceLoc(), regionForGenotyping,
                         readLikelihoods, new HomogeneousPloidyModel(samplesList, 2), calledHaplotypes.getCalls()));
 
                 trimmingResult.nonVariantRightFlankRegion().ifPresent(flank -> result.addAll(referenceModelForNoVariation(flank)));

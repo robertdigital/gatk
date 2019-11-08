@@ -123,10 +123,6 @@ public final class AssemblyRegionTrimmer {
             return !callableEvents.isEmpty();
         }
 
-        public boolean needsTrimming() {
-            return nonVariantFlanks.getLeft() != null || nonVariantFlanks.getRight() != null;
-        }
-
         /**
          * Returns the trimmed variant containing region
          *
@@ -170,6 +166,11 @@ public final class AssemblyRegionTrimmer {
         protected static Result noVariation(final AssemblyRegion region) {
             final Result result = new Result(region, Collections.emptyList(), Pair.of(region.getSpan(), null), null, null);
             return result;
+        }
+
+        public AssemblyResultSet trimAssemblyResult(final AssemblyResultSet untrimmedAssemblyResult) {
+            final boolean needsTrimming = nonVariantFlanks.getLeft() != null || nonVariantFlanks.getRight() != null;
+            return needsTrimming ? untrimmedAssemblyResult.trimTo(getCallableRegion()) : untrimmedAssemblyResult;
         }
     }
 
