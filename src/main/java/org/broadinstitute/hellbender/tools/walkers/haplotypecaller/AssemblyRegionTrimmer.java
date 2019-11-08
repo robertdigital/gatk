@@ -3,8 +3,6 @@ package org.broadinstitute.hellbender.tools.walkers.haplotypecaller;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.broadinstitute.barclay.argparser.CommandLineException;
 import org.broadinstitute.hellbender.engine.AssemblyRegion;
 import org.broadinstitute.hellbender.engine.spark.AssemblyRegionArgumentCollection;
@@ -51,7 +49,7 @@ public final class AssemblyRegionTrimmer {
     /**
      * Holds the result of trimming.
      */
-    public static final class Result {
+    public final class Result {
 
         /**
          * Holds the input active region.
@@ -125,37 +123,37 @@ public final class AssemblyRegionTrimmer {
          *  Notice that in case of no variation, the whole original region is considered the left flanking region.
          */
         public Optional<AssemblyRegion> nonVariantLeftFlankRegion() {
-            return nonVariantFlanks.getLeft() == null ? Optional.empty() : Optional.of(originalRegion.trim(nonVariantFlanks.getLeft(), originalRegion.getExtension()));
+            return nonVariantFlanks.getLeft() == null ? Optional.empty() : Optional.of(originalRegion.trim(nonVariantFlanks.getLeft(), assemblyRegionArgs.assemblyRegionPadding));
         }
 
         /**
          *  Returns the trimmed out right non-variant region.
          */
         public Optional<AssemblyRegion> nonVariantRightFlankRegion() {
-            return nonVariantFlanks.getRight() == null ? Optional.empty() : Optional.of(originalRegion.trim(nonVariantFlanks.getRight(), originalRegion.getExtension()));
-        }
-
-        /**
-         * Creates a result indicating that there was no trimming to be done.
-         */
-        protected static Result noTrimming(final AssemblyRegion region, final List<VariantContext> events) {
-            final SimpleInterval targetRegionLoc = region.getSpan();
-            final Result result = new Result(region, events,Pair.of(null, null), targetRegionLoc, targetRegionLoc);
-            return result;
-        }
-
-        /**
-         * Creates a result indicating that no variation was found.
-         */
-        protected static Result noVariation(final AssemblyRegion region) {
-            final Result result = new Result(region, Collections.emptyList(), Pair.of(region.getSpan(), null), null, null);
-            return result;
+            return nonVariantFlanks.getRight() == null ? Optional.empty() : Optional.of(originalRegion.trim(nonVariantFlanks.getRight(), assemblyRegionArgs.assemblyRegionPadding));
         }
 
         public AssemblyResultSet trimAssemblyResult(final AssemblyResultSet untrimmedAssemblyResult) {
             final boolean needsTrimming = nonVariantFlanks.getLeft() != null || nonVariantFlanks.getRight() != null;
             return needsTrimming ? untrimmedAssemblyResult.trimTo(getCallableRegion()) : untrimmedAssemblyResult;
         }
+    }
+
+    /**
+     * Creates a result indicating that there was no trimming to be done.
+     */
+    protected Result noTrimming(final AssemblyRegion region, final List<VariantContext> events) {
+        final SimpleInterval targetRegionLoc = region.getSpan();
+        final Result result = new Result(region, events,Pair.of(null, null), targetRegionLoc, targetRegionLoc);
+        return result;
+    }
+
+    /**
+     * Creates a result indicating that no variation was found.
+     */
+    protected Result noVariation(final AssemblyRegion region) {
+        final Result result = new Result(region, Collections.emptyList(), Pair.of(region.getSpan(), null), null, null);
+        return result;
     }
 
     /**
@@ -169,9 +167,9 @@ public final class AssemblyRegionTrimmer {
         final List<VariantContext> variantsInRegion = variants.stream().filter(region::overlaps).collect(Collectors.toList());
 
         if ( variantsInRegion.isEmpty() ) {
-            return Result.noVariation(region);
+            return noVariation(region);
         } else if ( assemblyRegionArgs.dontTrimActiveRegions) {
-            return Result.noTrimming(region, variantsInRegion);
+            return noTrimming(region, variantsInRegion);
         }
 
         final int minStart = variantsInRegion.stream().mapToInt(VariantContext::getStart).min().getAsInt();
