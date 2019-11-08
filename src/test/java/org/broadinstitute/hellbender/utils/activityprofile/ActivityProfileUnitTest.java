@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import org.broadinstitute.hellbender.GATKBaseTest;
 import org.broadinstitute.hellbender.engine.AssemblyRegion;
+import org.broadinstitute.hellbender.engine.spark.AssemblyRegionArgumentCollection;
 import org.broadinstitute.hellbender.utils.*;
 import org.broadinstitute.hellbender.utils.fasta.CachingIndexedFastaSequenceFile;
 import org.broadinstitute.hellbender.utils.io.IOUtils;
@@ -21,6 +22,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
     private SAMFileHeader header;
 
     private final static double ACTIVE_PROB_THRESHOLD= 0.002;
+    private static final AssemblyRegionArgumentCollection ASSEMBLY_REGION_ARGS = new AssemblyRegionArgumentCollection();
 
     @BeforeClass
     public void init() throws IOException {
@@ -207,13 +209,13 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
             Assert.assertNotNull(profile.toString());
 
             if ( ! waitUntilEnd ) {
-                final List<AssemblyRegion> regions = profile.popReadyAssemblyRegions(0, 1, maxRegionSize, false);
+                final List<AssemblyRegion> regions = profile.popReadyAssemblyRegions(ASSEMBLY_REGION_ARGS, false);
                 lastRegion = assertGoodRegions(start, regions, maxRegionSize, lastRegion, probs, seenSites);
             }
         }
 
         if ( waitUntilEnd || forceConversion ) {
-            final List<AssemblyRegion> regions = profile.popReadyAssemblyRegions(0, 1, maxRegionSize, forceConversion);
+            final List<AssemblyRegion> regions = profile.popReadyAssemblyRegions(ASSEMBLY_REGION_ARGS, forceConversion);
             lastRegion = assertGoodRegions(start, regions, maxRegionSize, lastRegion, probs, seenSites);
         }
 
@@ -383,7 +385,7 @@ public class ActivityProfileUnitTest extends GATKBaseTest {
             profile.add(state);
         }
 
-        final List<AssemblyRegion> regions = profile.popReadyAssemblyRegions(0, minRegionSize, maxRegionSize, false);
+        final List<AssemblyRegion> regions = profile.popReadyAssemblyRegions(ASSEMBLY_REGION_ARGS, false);
         Assert.assertTrue(regions.size() >= 1, "Should only be one regions for this test");
         final AssemblyRegion region = regions.get(0);
         Assert.assertEquals(region.getStart(), 1, "Region should start at 1");

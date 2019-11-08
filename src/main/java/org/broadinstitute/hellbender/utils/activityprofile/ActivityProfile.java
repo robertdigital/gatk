@@ -2,6 +2,7 @@ package org.broadinstitute.hellbender.utils.activityprofile;
 
 import htsjdk.samtools.SAMFileHeader;
 import org.broadinstitute.hellbender.engine.AssemblyRegion;
+import org.broadinstitute.hellbender.engine.spark.AssemblyRegionArgumentCollection;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
 
@@ -95,32 +96,25 @@ public class ActivityProfile {
      *
      * No returned region will be larger than maxRegionSize.
      *
-     * @param assemblyRegionExtension the extension value to provide to the constructed regions
-     * @param minRegionSize the minimum region size, in the case where we have to cut up regions that are too large
-     * @param maxRegionSize the maximize size of the returned region
      * @param atEndOfInterval if true, we'll return a region whose end isn't sufficiently far from the end of the
      *                        stateList.  Used to close out the active region when we've hit some kind of end (such
      *                        as the end of the contig)
      * @return a non-null list of active regions
      */
-    public List<AssemblyRegion> popReadyAssemblyRegions( final int assemblyRegionExtension, final int minRegionSize, final int maxRegionSize, final boolean atEndOfInterval ) {
-        Utils.validateArg(assemblyRegionExtension >= 0, () -> "assemblyRegionExtension must be >= 0 but got " + assemblyRegionExtension);
-        Utils.validateArg( minRegionSize > 0, () -> "minRegionSize must be >= 1 but got " + minRegionSize);
-        Utils.validateArg( maxRegionSize > 0, () -> "maxRegionSize must be >= 1 but got " + maxRegionSize);
-
+    public List<AssemblyRegion> popReadyAssemblyRegions(AssemblyRegionArgumentCollection assemblyRegionArgs, final boolean atEndOfInterval) {
         final List<AssemblyRegion> regions = new ArrayList<>();
 
         // TODO: max region size should be replaced with some max look-ahead distance parameter
-        while ( !stateList.isEmpty() && (atEndOfInterval || stateList.size() >= maxRegionSize)) {
+        while ( !stateList.isEmpty() && (atEndOfInterval || stateList.size() >= assemblyRegionArgs.maxAssemblyRegionSize)) {
             final ActivityProfileState first = stateList.get(0);
             final boolean isActiveRegion = first.getActiveProb() > activeProbThreshold;
 
-            final int offsetOfNextRegionEnd = findEndOfRegion(isActiveRegion, minRegionSize, maxRegionSize);
+            final int offsetOfNextRegionEnd = findEndOfRegion(isActiveRegion, assemblyRegionArgs.minAssemblyRegionSize, assemblyRegionArgs.maxAssemblyRegionSize);
 
             // create an active region, discard the states from that region, and advance the start locus
             final List<ActivityProfileState> statesInRegion = stateList.subList(0, offsetOfNextRegionEnd + 1);
             final SimpleInterval regionLoc = new SimpleInterval(first.getLoc().getContig(), first.getLoc().getStart(), first.getLoc().getStart() + offsetOfNextRegionEnd);
-            regions.add(new AssemblyRegion(regionLoc, isActiveRegion, assemblyRegionExtension, samHeader));
+            regions.add(new AssemblyRegion(regionLoc, isActiveRegion, assemblyRegionArgs.assemblyRegionPadding, samHeader));
             statesInRegion.clear();
 
             // update the start and stop locations as necessary

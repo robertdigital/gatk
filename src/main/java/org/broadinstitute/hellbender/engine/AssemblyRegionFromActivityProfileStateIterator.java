@@ -3,6 +3,7 @@ package org.broadinstitute.hellbender.engine;
 import htsjdk.samtools.SAMFileHeader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.broadinstitute.hellbender.engine.spark.AssemblyRegionArgumentCollection;
 import org.broadinstitute.hellbender.engine.spark.AssemblyRegionWalkerSpark;
 import org.broadinstitute.hellbender.utils.IntervalUtils;
 import org.broadinstitute.hellbender.utils.Utils;
@@ -20,9 +21,7 @@ public class AssemblyRegionFromActivityProfileStateIterator implements Iterator<
     private static final Logger logger = LogManager.getLogger(AssemblyRegionFromActivityProfileStateIterator.class);
 
     private final SAMFileHeader readHeader;
-    private final int minRegionSize;
-    private final int maxRegionSize;
-    private final int assemblyRegionPadding;
+    private final AssemblyRegionArgumentCollection assemblyRegionArgs;
 
     private AssemblyRegion readyRegion;
     private Queue<AssemblyRegion> pendingRegions;
@@ -31,36 +30,21 @@ public class AssemblyRegionFromActivityProfileStateIterator implements Iterator<
 
     /**
      * Constructs an AssemblyRegionIterator over a provided read shard
-     *  @param readHeader header for the reads
-     * @param minRegionSize minimum size of an assembly region
-     * @param maxRegionSize maximum size of an assembly region
-     * @param assemblyRegionPadding number of bases of padding on either side of an assembly region
-     * @param activeProbThreshold minimum probability for a locus to be considered active
+     * @param readHeader header for the reads
+     * @param assemblyRegionArgs
      */
     public AssemblyRegionFromActivityProfileStateIterator(final Iterator<ActivityProfileState> activityProfileStateIterator,
                                                           final SAMFileHeader readHeader,
-                                                          final int minRegionSize,
-                                                          final int maxRegionSize,
-                                                          final int assemblyRegionPadding,
-                                                          final double activeProbThreshold) {
-
+                                                          final AssemblyRegionArgumentCollection assemblyRegionArgs) {
         Utils.nonNull(readHeader);
-        Utils.validateArg(minRegionSize >= 1, "minRegionSize must be >= 1");
-        Utils.validateArg(maxRegionSize >= 1, "maxRegionSize must be >= 1");
-        Utils.validateArg(minRegionSize <= maxRegionSize, "minRegionSize must be <= maxRegionSize");
-        Utils.validateArg(assemblyRegionPadding >= 0, "assemblyRegionPadding must be >= 0");
-        Utils.validateArg(activeProbThreshold >= 0.0, "activeProbThreshold must be >= 0.0");
-
+        assemblyRegionArgs.validate();
+        this.assemblyRegionArgs = assemblyRegionArgs;
         this.activityProfileStateIterator = activityProfileStateIterator;
         this.readHeader = readHeader;
-        this.minRegionSize = minRegionSize;
-        this.maxRegionSize = maxRegionSize;
-        this.assemblyRegionPadding = assemblyRegionPadding;
 
-        this.readyRegion = null;
-        this.pendingRegions = new ArrayDeque<>();
-        this.activityProfile = new ActivityProfile(activeProbThreshold, readHeader);
-
+        readyRegion = null;
+        pendingRegions = new ArrayDeque<>();
+        activityProfile = new ActivityProfile(assemblyRegionArgs.activeProbThreshold, readHeader);
         readyRegion = loadNextAssemblyRegion();
     }
 
@@ -92,7 +76,7 @@ public class AssemblyRegionFromActivityProfileStateIterator implements Iterator<
             // Ordering matters here: need to check for forceConversion before adding current pileup to the activity profile
             if ( ! activityProfile.isEmpty() ) {
                 final boolean forceConversion = profile.getLoc().getStart() != activityProfile.getEnd() + 1;
-                pendingRegions.addAll(activityProfile.popReadyAssemblyRegions(assemblyRegionPadding, minRegionSize, maxRegionSize, forceConversion));
+                pendingRegions.addAll(activityProfile.popReadyAssemblyRegions(assemblyRegionArgs, forceConversion));
             }
 
             // Add the current pileup to the activity profile
@@ -111,7 +95,7 @@ public class AssemblyRegionFromActivityProfileStateIterator implements Iterator<
 
             if ( ! activityProfile.isEmpty() ) {
                 // Pop the activity profile a final time with forceConversion == true
-                pendingRegions.addAll(activityProfile.popReadyAssemblyRegions(assemblyRegionPadding, minRegionSize, maxRegionSize, true));
+                pendingRegions.addAll(activityProfile.popReadyAssemblyRegions(assemblyRegionArgs, true));
             }
 
             // Grab the next pending region if there is one, unless we already have a region ready to go

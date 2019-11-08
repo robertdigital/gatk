@@ -19,6 +19,7 @@ import org.broadinstitute.hellbender.engine.filters.MappingQualityReadFilter;
 import org.broadinstitute.hellbender.engine.filters.ReadFilter;
 import org.broadinstitute.hellbender.engine.filters.ReadFilterLibrary;
 import org.broadinstitute.hellbender.engine.filters.WellformedReadFilter;
+import org.broadinstitute.hellbender.engine.spark.AssemblyRegionArgumentCollection;
 import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.tools.walkers.annotator.*;
 import org.broadinstitute.hellbender.tools.walkers.genotyper.*;
@@ -143,24 +144,24 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
     /**
      * Create and initialize a new HaplotypeCallerEngine given a collection of HaplotypeCaller arguments, a reads header,
      * and a reference file
-     *
-     * @param hcArgs command-line arguments for the HaplotypeCaller
+     *  @param hcArgs command-line arguments for the HaplotypeCaller
+     * @param assemblyRegionArgs
      * @param createBamOutIndex true to create an index file for the bamout
      * @param createBamOutMD5 true to create an md5 file for the bamout
      * @param readsHeader header for the reads
      * @param referenceReader reader to provide reference data, this reference reader will be closed when {@link #shutdown()} is called
      * @param annotationEngine variantAnnotatorEngine with annotations to process already added
      */
-    public HaplotypeCallerEngine( final HaplotypeCallerArgumentCollection hcArgs, boolean createBamOutIndex,
-                                  boolean createBamOutMD5, final SAMFileHeader readsHeader,
-                                  ReferenceSequenceFile referenceReader, VariantAnnotatorEngine annotationEngine) {
+    public HaplotypeCallerEngine(final HaplotypeCallerArgumentCollection hcArgs, final AssemblyRegionArgumentCollection assemblyRegionArgs, boolean createBamOutIndex,
+                                 boolean createBamOutMD5, final SAMFileHeader readsHeader,
+                                 ReferenceSequenceFile referenceReader, VariantAnnotatorEngine annotationEngine) {
         this.hcArgs = Utils.nonNull(hcArgs);
         this.readsHeader = Utils.nonNull(readsHeader);
         this.referenceReader = Utils.nonNull(referenceReader);
         this.annotationEngine = Utils.nonNull(annotationEngine);
-        this.aligner = SmithWatermanAligner.getAligner(hcArgs.smithWatermanImplementation);
+        aligner = SmithWatermanAligner.getAligner(hcArgs.smithWatermanImplementation);
         forceCallingAllelesPresent = hcArgs.alleles != null;
-        initialize(createBamOutIndex, createBamOutMD5);
+        initialize(createBamOutIndex, createBamOutMD5, assemblyRegionArgs);
         if (hcArgs.assemblyStateOutput != null) {
             try {
                 assemblyDebugOutStream = new PrintStream(Files.newOutputStream(IOUtils.getPath(hcArgs.assemblyStateOutput)));
@@ -203,7 +204,7 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
         return Arrays.asList(StandardAnnotation.class, StandardHCAnnotation.class);
     }
 
-    private void initialize(boolean createBamOutIndex, final boolean createBamOutMD5) {
+    private void initialize(boolean createBamOutIndex, final boolean createBamOutMD5, AssemblyRegionArgumentCollection assemblyRegionArgs) {
         // Note: order of operations matters here!
 
         initializeSamples();
@@ -228,7 +229,7 @@ public final class HaplotypeCallerEngine implements AssemblyRegionEvaluator {
         assemblyEngine = hcArgs.createReadThreadingAssembler();
         likelihoodCalculationEngine = AssemblyBasedCallerUtils.createLikelihoodCalculationEngine(hcArgs.likelihoodArgs);
 
-        trimmer.initialize(hcArgs.assemblerArgs, readsHeader.getSequenceDictionary());
+        trimmer.initialize(assemblyRegionArgs, readsHeader.getSequenceDictionary());
     }
 
     private boolean isVCFMode() {

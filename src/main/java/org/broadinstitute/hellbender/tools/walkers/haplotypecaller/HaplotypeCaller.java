@@ -137,13 +137,6 @@ import java.util.List;
 @DocumentedFeature
 public final class HaplotypeCaller extends AssemblyRegionWalker {
 
-    //NOTE: many of these settings are referenced by HaplotypeCallerSpark
-    public static final int DEFAULT_MIN_ASSEMBLY_REGION_SIZE = 50;
-    public static final int DEFAULT_MAX_ASSEMBLY_REGION_SIZE = 300;
-    public static final int DEFAULT_ASSEMBLY_REGION_PADDING = 100;
-    public static final int DEFAULT_MAX_READS_PER_ALIGNMENT = 50;
-    public static final double DEFAULT_ACTIVE_PROB_THRESHOLD = 0.002;
-
     @ArgumentCollection
     private HaplotypeCallerArgumentCollection hcArgs = new HaplotypeCallerArgumentCollection();
 
@@ -156,21 +149,6 @@ public final class HaplotypeCaller extends AssemblyRegionWalker {
     private VariantContextWriter vcfWriter;
 
     private HaplotypeCallerEngine hcEngine;
-
-    @Override
-    protected int defaultMinAssemblyRegionSize() { return DEFAULT_MIN_ASSEMBLY_REGION_SIZE; }
-
-    @Override
-    protected int defaultMaxAssemblyRegionSize() { return DEFAULT_MAX_ASSEMBLY_REGION_SIZE; }
-
-    @Override
-    protected int defaultAssemblyRegionPadding() { return DEFAULT_ASSEMBLY_REGION_PADDING; }
-
-    @Override
-    protected int defaultMaxReadsPerAlignmentStart() { return DEFAULT_MAX_READS_PER_ALIGNMENT; }
-
-    @Override
-    protected double defaultActiveProbThreshold() { return DEFAULT_ACTIVE_PROB_THRESHOLD; }
 
     @Override
     public List<ReadFilter> getDefaultReadFilters() {
@@ -215,7 +193,7 @@ public final class HaplotypeCaller extends AssemblyRegionWalker {
 
         final VariantAnnotatorEngine variantAnnotatorEngine = new VariantAnnotatorEngine(makeVariantAnnotations(),
                 hcArgs.dbsnp.dbsnp, hcArgs.comps,  hcArgs.emitReferenceConfidence != ReferenceConfidenceMode.NONE, false);
-        hcEngine = new HaplotypeCallerEngine(hcArgs, createOutputBamIndex, createOutputBamMD5, getHeaderForReads(), getReferenceReader(referenceArguments), variantAnnotatorEngine);
+        hcEngine = new HaplotypeCallerEngine(hcArgs, assemblyRegionArgs, createOutputBamIndex, createOutputBamMD5, getHeaderForReads(), getReferenceReader(referenceArguments), variantAnnotatorEngine);
 
         // The HC engine will make the right kind (VCF or GVCF) of writer for us
         final SAMSequenceDictionary sequenceDictionary = getHeaderForReads().getSequenceDictionary();

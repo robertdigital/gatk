@@ -230,21 +230,6 @@ public final class Mutect2 extends AssemblyRegionWalker {
     private Mutect2Engine m2Engine;
 
     @Override
-    protected int defaultMinAssemblyRegionSize() { return 50; }
-
-    @Override
-    protected int defaultMaxAssemblyRegionSize() { return 300; }
-
-    @Override
-    protected int defaultAssemblyRegionPadding() { return 100; }
-
-    @Override
-    protected int defaultMaxReadsPerAlignmentStart() { return 50; }
-
-    @Override
-    protected double defaultActiveProbThreshold() { return 0.002; }
-
-    @Override
     public boolean useVariantAnnotations() { return true;}
 
     @Override
@@ -264,7 +249,7 @@ public final class Mutect2 extends AssemblyRegionWalker {
 
     @Override
     protected ReadsDownsampler createDownsampler() {
-        return new MutectDownsampler(maxReadsPerAlignmentStart, MTAC.maxSuspiciousReadsPerAlignmentStart, MTAC.downsamplingStride);
+        return new MutectDownsampler(assemblyRegionArgs.maxReadsPerAlignmentStart, MTAC.maxSuspiciousReadsPerAlignmentStart, MTAC.downsamplingStride);
     }
 
     @Override
@@ -272,15 +257,15 @@ public final class Mutect2 extends AssemblyRegionWalker {
 
     @Override
     public void onTraversalStart() {
-        VariantAnnotatorEngine annotatorEngine = new VariantAnnotatorEngine(makeVariantAnnotations(), null, Collections.emptyList(), false, false);
-        m2Engine = new Mutect2Engine(MTAC, createOutputBamIndex, createOutputBamMD5, getHeaderForReads(), referenceArguments.getReferenceFileName(), annotatorEngine);
+        final VariantAnnotatorEngine annotatorEngine = new VariantAnnotatorEngine(makeVariantAnnotations(), null, Collections.emptyList(), false, false);
+        m2Engine = new Mutect2Engine(MTAC, assemblyRegionArgs, createOutputBamIndex, createOutputBamMD5, getHeaderForReads(), referenceArguments.getReferenceFileName(), annotatorEngine);
         vcfWriter = createVCFWriter(outputVCF);
         if (m2Engine.emitReferenceConfidence()) {
             logger.warn("Note that the Mutect2 reference confidence mode is in BETA -- the likelihoods model and output format are subject to change in subsequent versions.");
             if ( MTAC.emitReferenceConfidence == ReferenceConfidenceMode.GVCF ) {
                 try {
                     vcfWriter = new SomaticGVCFWriter(vcfWriter, new ArrayList<Number>(MTAC.GVCFGQBands));
-                } catch ( IllegalArgumentException e ) {
+                } catch ( final IllegalArgumentException e ) {
                     throw new CommandLineException.BadArgumentValue("GQBands", "are malformed: " + e.getMessage());
                 }
             }

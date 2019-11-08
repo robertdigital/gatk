@@ -34,10 +34,6 @@ public abstract class ReadThreadingAssemblerArgumentCollection implements Serial
     @Argument(fullName="dont-trim-active-regions", doc="If specified, we will not trim down the active region from the full region (active + extension) to just the active interval for genotyping", optional = true)
     protected boolean dontTrimActiveRegions = false;
 
-    @Hidden
-    @Argument(fullName="padding-around-variants", doc = "Number of bases of padding around variants (after assembly and before genotyping)", optional = true)
-    public int variantPadding = 20;
-
     // -----------------------------------------------------------------------------------------------
     // arguments to control internal behavior of the read threading assembler
     // -----------------------------------------------------------------------------------------------

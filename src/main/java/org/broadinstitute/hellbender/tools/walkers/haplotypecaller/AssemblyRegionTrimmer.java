@@ -7,6 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.broadinstitute.barclay.argparser.CommandLineException;
 import org.broadinstitute.hellbender.engine.AssemblyRegion;
+import org.broadinstitute.hellbender.engine.spark.AssemblyRegionArgumentCollection;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
 
@@ -26,19 +27,9 @@ import java.util.stream.Collectors;
  */
 public final class AssemblyRegionTrimmer {
 
-    /**
-     * Holds the debug flag. If {@code true} the trimmer will output debugging messages into the log.
-     */
-    private boolean debug;
-
-    private ReadThreadingAssemblerArgumentCollection assemblyArgs;
+    private AssemblyRegionArgumentCollection assemblyRegionArgs;
 
     private SAMSequenceDictionary sequenceDictionary;
-
-    /**
-     * Holds a reference the trimmer logger.
-     */
-    private static final Logger logger = LogManager.getLogger(AssemblyRegionTrimmer.class);
 
     /**
      * Initializes the trimmer.
@@ -46,22 +37,15 @@ public final class AssemblyRegionTrimmer {
      * <p/>
      * This method should be called once and only once before any trimming is performed.
      *
-     * @param assemblyArgs user arguments for the trimmer
+     * @param assemblyRegionArgs user arguments for the trimmer
      * @param sequenceDictionary dictionary to determine the bounds of contigs
      * @throws IllegalStateException if this trim calculator has already been initialized.
      * @throws IllegalArgumentException if the input location parser is {@code null}.
      * @throws CommandLineException.BadArgumentValue if any of the user argument values is invalid.
      */
-    public void initialize(final ReadThreadingAssemblerArgumentCollection assemblyArgs, final SAMSequenceDictionary sequenceDictionary) {
-        Utils.validate(this.assemblyArgs == null, () -> getClass().getSimpleName() + " instance initialized twice");
-
-        this.assemblyArgs = Utils.nonNull(assemblyArgs);;
+    public void initialize(final AssemblyRegionArgumentCollection assemblyRegionArgs, final SAMSequenceDictionary sequenceDictionary) {
         this.sequenceDictionary = sequenceDictionary;
-
-        if ( this.assemblyArgs.variantPadding < 0 ) {
-            throw new CommandLineException.BadArgumentValue("padding-around-variants", "" + this.assemblyArgs.variantPadding + "< 0");
-        }
-        this.debug = assemblyArgs.debugAssembly;
+        this.assemblyRegionArgs = assemblyRegionArgs;
     }
 
     /**
@@ -186,7 +170,7 @@ public final class AssemblyRegionTrimmer {
 
         if ( variantsInRegion.isEmpty() ) {
             return Result.noVariation(region);
-        } else if ( assemblyArgs.dontTrimActiveRegions) {
+        } else if ( assemblyRegionArgs.dontTrimActiveRegions) {
             return Result.noTrimming(region, variantsInRegion);
         }
 
@@ -194,16 +178,8 @@ public final class AssemblyRegionTrimmer {
         final int maxEnd = variantsInRegion.stream().mapToInt(VariantContext::getEnd).max().getAsInt();
         final SimpleInterval variantSpan = new SimpleInterval(region.getContig(), minStart, maxEnd);
 
-        final SimpleInterval paddedVariantSpan = variantSpan.expandWithinContig(assemblyArgs.variantPadding, sequenceDictionary);
-        final SimpleInterval callableSpan = variantSpan.intersect(region);
+        final SimpleInterval paddedVariantSpan = variantSpan.expandWithinContig(assemblyRegionArgs.variantPadding, sequenceDictionary);
         final Pair<SimpleInterval, SimpleInterval> nonVariantFlanks = getFlanks(region, paddedVariantSpan);
-
-        if ( debug ) {
-            logger.info("events       : " + variantsInRegion);
-            logger.info("region       : " + region);
-            logger.info("variantSpan : " + callableSpan);
-            logger.info("paddedSpan    : " + paddedVariantSpan);
-        }
 
         return new Result(region, variantsInRegion, nonVariantFlanks, paddedVariantSpan, variantSpan);
     }

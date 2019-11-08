@@ -91,9 +91,7 @@ public class FindAssemblyRegionsSpark {
                         final Iterator<AssemblyRegion> assemblyRegionIter = new AssemblyRegionIterator(
                                 new ShardToMultiIntervalShardAdapter<>(downsampledShardedRead),
                                 header, reference, features, assemblyRegionEvaluator,
-                                assemblyRegionArgs.minAssemblyRegionSize, assemblyRegionArgs.maxAssemblyRegionSize,
-                                assemblyRegionArgs.assemblyRegionPadding, assemblyRegionArgs.activeProbThreshold
-                        );
+                                assemblyRegionArgs);
                         return Utils.stream(assemblyRegionIter).map(assemblyRegion ->
                                 new AssemblyRegionWalkerContext(assemblyRegion,
                                         new ReferenceContext(reference, assemblyRegion.getExtendedSpan()),
@@ -207,13 +205,8 @@ public class FindAssemblyRegionsSpark {
         return (FlatMapFunction<Tuple2<String, Iterable<ActivityProfileStateRange>>, ReadlessAssemblyRegion>) iter ->
                 Iterators.transform(
                         new AssemblyRegionFromActivityProfileStateIterator(
-                                ActivityProfileStateRange.toIteratorActivityProfileState(iter._2.iterator()),
-                                header,
-                                assemblyRegionArgs.minAssemblyRegionSize,
-                                assemblyRegionArgs.maxAssemblyRegionSize,
-                                assemblyRegionArgs.assemblyRegionPadding,
-                                assemblyRegionArgs.activeProbThreshold
-                        ), new com.google.common.base.Function<AssemblyRegion, ReadlessAssemblyRegion>() {
+                                ActivityProfileStateRange.toIteratorActivityProfileState(iter._2.iterator()), header, assemblyRegionArgs),
+                        new com.google.common.base.Function<AssemblyRegion, ReadlessAssemblyRegion>() {
                             @Nullable
                             @Override
                             public ReadlessAssemblyRegion apply(@Nullable AssemblyRegion input) {

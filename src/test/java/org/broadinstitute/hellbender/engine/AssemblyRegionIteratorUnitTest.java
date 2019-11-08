@@ -8,15 +8,14 @@ import org.broadinstitute.hellbender.engine.filters.CountingReadFilter;
 import org.broadinstitute.hellbender.engine.filters.ReadFilter;
 import org.broadinstitute.hellbender.engine.filters.ReadFilterLibrary;
 import org.broadinstitute.hellbender.engine.filters.WellformedReadFilter;
+import org.broadinstitute.hellbender.engine.spark.AssemblyRegionArgumentCollection;
 import org.broadinstitute.hellbender.tools.walkers.annotator.VariantAnnotatorEngine;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.HaplotypeCallerArgumentCollection;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.HaplotypeCallerEngine;
 import org.broadinstitute.hellbender.utils.IntervalUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
-import org.broadinstitute.hellbender.utils.activityprofile.ActivityProfileState;
 import org.broadinstitute.hellbender.utils.fasta.CachingIndexedFastaSequenceFile;
 import org.broadinstitute.hellbender.utils.io.IOUtils;
-import org.broadinstitute.hellbender.utils.pileup.PileupElement;
 import org.broadinstitute.hellbender.utils.read.GATKRead;
 import org.broadinstitute.hellbender.utils.read.ReadCoordinateComparator;
 import org.testng.Assert;
@@ -35,13 +34,13 @@ public class AssemblyRegionIteratorUnitTest extends GATKBaseTest {
     public Object[][] testCorrectRegionsHaveCorrectReadsAndSizeData() {
         return new Object[][] {
                 // One large interval in the shard
-                { NA12878_20_21_WGS_bam, b37_reference_20_21, Arrays.asList(new SimpleInterval("20", 10000000, 10100000)), 50, 300, 100 },
+                { NA12878_20_21_WGS_bam, b37_reference_20_21, Arrays.asList(new SimpleInterval("20", 10000000, 10100000))},
                 // Multiple intervals in the shard, same contig, no overlap
-                { NA12878_20_21_WGS_bam, b37_reference_20_21, Arrays.asList(new SimpleInterval("20", 10000000, 10010000), new SimpleInterval("20", 10040000, 10050000), new SimpleInterval("20", 10060000, 10070000)), 50, 300, 100 },
+                { NA12878_20_21_WGS_bam, b37_reference_20_21, Arrays.asList(new SimpleInterval("20", 10000000, 10010000), new SimpleInterval("20", 10040000, 10050000), new SimpleInterval("20", 10060000, 10070000))},
                 // Multiple intervals in the shard that overlap when padded
-                { NA12878_20_21_WGS_bam, b37_reference_20_21, Arrays.asList(new SimpleInterval("20", 10000000, 10020000), new SimpleInterval("20", 10020050, 10030000)), 50, 300, 100 },
+                { NA12878_20_21_WGS_bam, b37_reference_20_21, Arrays.asList(new SimpleInterval("20", 10000000, 10020000), new SimpleInterval("20", 10020050, 10030000))},
                 // Multiple intervals in the shard, on multiple contigs
-                { NA12878_20_21_WGS_bam, b37_reference_20_21, Arrays.asList(new SimpleInterval("20", 10000000, 10010000), new SimpleInterval("21", 10013000, 10015000)), 50, 300, 100 },
+                { NA12878_20_21_WGS_bam, b37_reference_20_21, Arrays.asList(new SimpleInterval("20", 10000000, 10010000), new SimpleInterval("21", 10013000, 10015000)) },
         };
     }
 
@@ -54,15 +53,16 @@ public class AssemblyRegionIteratorUnitTest extends GATKBaseTest {
      * the query results match the reads actually in the region.
      */
     @Test(dataProvider = "testCorrectRegionsHaveCorrectReadsAndSizeData")
-    public void testRegionsHaveCorrectReadsAndSize( final String reads, final String reference, final List<SimpleInterval> shardIntervals, final int minRegionSize, final int maxRegionSize, final int assemblyRegionPadding ) throws IOException {
+    public void testRegionsHaveCorrectReadsAndSize( final String reads, final String reference, final List<SimpleInterval> shardIntervals) throws IOException {
+        final AssemblyRegionArgumentCollection assemblyRegionArgs = new AssemblyRegionArgumentCollection();
         try (final ReadsDataSource readsSource = new ReadsDataSource(IOUtils.getPath(reads));
              final ReferenceDataSource refSource = ReferenceDataSource.of(IOUtils.getPath(reference));
              final ReferenceSequenceFile referenceReader = new CachingIndexedFastaSequenceFile(IOUtils.getPath(b37_reference_20_21));
         ) {
             final SAMSequenceDictionary readsDictionary = readsSource.getSequenceDictionary();
-            final MultiIntervalLocalReadShard readShard = new MultiIntervalLocalReadShard(shardIntervals, assemblyRegionPadding, readsSource);
+            final MultiIntervalLocalReadShard readShard = new MultiIntervalLocalReadShard(shardIntervals, assemblyRegionArgs.assemblyRegionPadding, readsSource);
             final HaplotypeCallerArgumentCollection hcArgs = new HaplotypeCallerArgumentCollection();
-            final AssemblyRegionEvaluator evaluator = new HaplotypeCallerEngine(hcArgs, false, false, readsSource.getHeader(),
+            final AssemblyRegionEvaluator evaluator = new HaplotypeCallerEngine(hcArgs, new AssemblyRegionArgumentCollection(), false, false, readsSource.getHeader(),
                                                                                 referenceReader, new VariantAnnotatorEngine(new ArrayList<>(), hcArgs.dbsnp.dbsnp, hcArgs.comps, false, false));
             final ReadCoordinateComparator readComparator = new ReadCoordinateComparator(readsSource.getHeader());
 
@@ -72,17 +72,17 @@ public class AssemblyRegionIteratorUnitTest extends GATKBaseTest {
             final CountingReadFilter combinedReadFilter = CountingReadFilter.fromList(readFilters, readsSource.getHeader());
             readShard.setReadFilter(combinedReadFilter);
 
-            final AssemblyRegionIterator iter = new AssemblyRegionIterator(readShard, readsSource.getHeader(), refSource, null, evaluator, minRegionSize, maxRegionSize, assemblyRegionPadding, 0.002);
+            final AssemblyRegionIterator iter = new AssemblyRegionIterator(readShard, readsSource.getHeader(), refSource, null, evaluator, assemblyRegionArgs);
 
             AssemblyRegion previousRegion = null;
             while ( iter.hasNext() ) {
                 final AssemblyRegion region = iter.next();
 
-                Assert.assertTrue(region.getLengthOnReference() <= maxRegionSize, "region size " + region.getLengthOnReference() + " exceeds the configured maximum: " + maxRegionSize);
+                Assert.assertTrue(region.getLengthOnReference() <= assemblyRegionArgs.maxAssemblyRegionSize, "region size " + region.getLengthOnReference() + " exceeds the configured maximum");
 
                 final int regionContigLength = readsDictionary.getSequence(region.getContig()).getSequenceLength();
-                final int expectedLeftRegionPadding = region.getStart() - assemblyRegionPadding > 0 ? assemblyRegionPadding : region.getStart() - 1;
-                final int expectedRightRegionPadding = region.getEnd() + assemblyRegionPadding <= regionContigLength ? assemblyRegionPadding : regionContigLength - region.getEnd();
+                final int expectedLeftRegionPadding = region.getStart() - assemblyRegionArgs.assemblyRegionPadding > 0 ? assemblyRegionArgs.assemblyRegionPadding : region.getStart() - 1;
+                final int expectedRightRegionPadding = region.getEnd() + assemblyRegionArgs.assemblyRegionPadding <= regionContigLength ? assemblyRegionArgs.assemblyRegionPadding : regionContigLength - region.getEnd();
                 Assert.assertEquals(region.getStart() - region.getExtendedSpan().getStart(), expectedLeftRegionPadding, "Wrong amount of padding on the left side of the region");
                 Assert.assertEquals(region.getExtendedSpan().getEnd() - region.getEnd(), expectedRightRegionPadding, "Wrong amount of padding on the right side of the region");
                 final SimpleInterval regionInterval = region.getExtendedSpan();
