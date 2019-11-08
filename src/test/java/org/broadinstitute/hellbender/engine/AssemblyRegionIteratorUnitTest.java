@@ -127,35 +127,4 @@ public class AssemblyRegionIteratorUnitTest extends GATKBaseTest {
             }
         }
     }
-
-    /**
-     * An artificial AssemblyRegionEvaluator used to assert that reads with deletions are or are not present in a pileup
-     */
-    private static class FakeAssertingAssemblyRegionEvaluator implements AssemblyRegionEvaluator {
-
-        private final SimpleInterval locusWithDeletions;
-        private final int expectedNumDeletionsAtLocus;
-
-        public FakeAssertingAssemblyRegionEvaluator(final SimpleInterval locusWithDeletions, final int expectedNumDeletionsAtLocus) {
-            this.locusWithDeletions = locusWithDeletions;
-            this.expectedNumDeletionsAtLocus = expectedNumDeletionsAtLocus;
-        }
-
-        @Override
-        public ActivityProfileState isActive(AlignmentContext locusPileup, ReferenceContext referenceContext, FeatureContext featureContext) {
-            if ( locusPileup.getLocation().equals(locusWithDeletions) ) {
-                int deletionCount = 0;
-                for ( final PileupElement pileupElement : locusPileup.getBasePileup() ) {
-                    if ( pileupElement.isDeletion() ) {
-                        ++deletionCount;
-                    }
-                }
-
-                Assert.assertEquals(deletionCount, expectedNumDeletionsAtLocus, "Wrong number of deletions in pileup at " + locusPileup.getLocation());
-            }
-
-            return new ActivityProfileState(new SimpleInterval(locusPileup), 0.0);
-        }
-    }
-
 }

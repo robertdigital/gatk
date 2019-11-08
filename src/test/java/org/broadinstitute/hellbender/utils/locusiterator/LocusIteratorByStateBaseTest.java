@@ -61,14 +61,12 @@ public abstract class LocusIteratorByStateBaseTest extends GATKBaseTest {
                                             final boolean keepUniqueReadList,
                                             final SAMFileHeader header) {
         reads.sort(new ReadCoordinateComparator(header));
-        return new LocusIteratorByState(
-                new FakeCloseableIterator<>(reads.iterator()),
-                downsamplingMethod,
+        return new LocusIteratorByState(new FakeCloseableIterator<>(reads.iterator()),
+                        LIBSDownsamplingInfo.toDownsamplingInfo(downsamplingMethod),
                 keepUniqueReadList,
                 sampleListForSAMWithoutReadGroups(),
                 header,
-                includeNs
-        );
+                includeNs);
     }
 
     private boolean isIndel(final CigarElement ce) {

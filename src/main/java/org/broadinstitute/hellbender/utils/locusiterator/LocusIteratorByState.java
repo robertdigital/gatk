@@ -46,11 +46,6 @@ public final class LocusIteratorByState implements Iterator<AlignmentContext> {
     /** Indicates that we shouldn't do any downsampling */
     public static final LIBSDownsamplingInfo NO_DOWNSAMPLING = new LIBSDownsamplingInfo(false, -1);
 
-    /**
-     * our log, which we want to capture anything from this class
-     */
-    private static final Logger logger = LogManager.getLogger(LocusIteratorByState.class);
-
     // -----------------------------------------------------------------------------------------------------------------
     //
     // member fields
@@ -58,8 +53,7 @@ public final class LocusIteratorByState implements Iterator<AlignmentContext> {
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * A complete list of all samples that may come out of the reads.  Must be
-     * comprehensive.
+     * A complete list of all samples that may come out of the reads.  Must be comprehensive.
      */
     private final List<String> samples;
 
@@ -93,11 +87,11 @@ public final class LocusIteratorByState implements Iterator<AlignmentContext> {
      *                                       according to standard coordinate-sorted BAM conventions
      * @param downsamplingMethod             information about how to downsample the reads
      * @param keepUniqueReadListInLIBS       if true, we will keep the unique reads from the samIterator and make them
- *                                       available via the transferReadsFromAllPreviousPileups interface
+     *                                       available via the transferReadsFromAllPreviousPileups interface
      * @param samples                        a complete list of samples present in the read groups for the reads coming from samIterator.
-*                                       This is generally just the set of read group sample fields in the SAMFileHeader.  This
-*                                       list of samples may contain a null element, and all reads without read groups will
-*                                       be mapped to this null sample
+     *                                       This is generally just the set of read group sample fields in the SAMFileHeader.  This
+     *                                       list of samples may contain a null element, and all reads without read groups will
+     *                                       be mapped to this null sample
      * @param header                         header from the reads
      */
     public LocusIteratorByState(final Iterator<GATKRead> samIterator,
@@ -105,40 +99,7 @@ public final class LocusIteratorByState implements Iterator<AlignmentContext> {
                                 final boolean keepUniqueReadListInLIBS,
                                 final Collection<String> samples,
                                 final SAMFileHeader header) {
-        this(samIterator,
-                LIBSDownsamplingInfo.toDownsamplingInfo(downsamplingMethod),
-                keepUniqueReadListInLIBS,
-                samples,
-                header
-        );
-    }
-
-    /**
-     * Create a new LocusIteratorByState
-     *  @param samIterator                    the iterator of reads to process into pileups.  Reads must be ordered
-     *                                       according to standard coordinate-sorted BAM conventions
-     * @param downsamplingMethod             information about how to downsample the reads
-     * @param keepUniqueReadListInLIBS       if true, we will keep the unique reads from the samIterator and make them
- *                                       available via the transferReadsFromAllPreviousPileups interface
-     * @param samples                        a complete list of samples present in the read groups for the reads coming from samIterator.
-*                                       This is generally just the set of read group sample fields in the SAMFileHeader.  This
-*                                       list of samples may contain a null element, and all reads without read groups will
-*                                       be mapped to this null sample
-     * @param header                         header from the reads
-     * @param includeReadsWithNsAtLoci       Include reads with Ns at loci (usually it is not needed)
-     */
-    public LocusIteratorByState(final Iterator<GATKRead> samIterator,
-                                final DownsamplingMethod downsamplingMethod,
-                                final boolean keepUniqueReadListInLIBS,
-                                final Collection<String> samples,
-                                final SAMFileHeader header,
-                                final boolean includeReadsWithNsAtLoci) {
-        this(samIterator,
-                LIBSDownsamplingInfo.toDownsamplingInfo(downsamplingMethod),
-                keepUniqueReadListInLIBS,
-                samples,
-                header,
-                includeReadsWithNsAtLoci
+        this(samIterator, LIBSDownsamplingInfo.toDownsamplingInfo(downsamplingMethod), keepUniqueReadListInLIBS, samples, header
         );
     }
 
@@ -148,11 +109,11 @@ public final class LocusIteratorByState implements Iterator<AlignmentContext> {
      *                                       according to standard coordinate-sorted BAM conventions
      * @param downsamplingInfo               meta-information about how to downsample the reads
      * @param keepUniqueReadListInLIBS       if true, we will keep the unique reads from the samIterator and make them
- *                                       available via the transferReadsFromAllPreviousPileups interface
+     *                                       available via the transferReadsFromAllPreviousPileups interface
      * @param samples                        a complete list of samples present in the read groups for the reads coming from samIterator.
-*                                       This is generally just the set of read group sample fields in the SAMFileHeader.  This
-*                                       list of samples may contain a null element, and all reads without read groups will
-*                                       be mapped to this null sample
+     *                                       This is generally just the set of read group sample fields in the SAMFileHeader.  This
+     *                                       list of samples may contain a null element, and all reads without read groups will
+     *                                       be mapped to this null sample
      * @param header                         header from the reads
      */
     public LocusIteratorByState(final Iterator<GATKRead> samIterator,
@@ -160,12 +121,7 @@ public final class LocusIteratorByState implements Iterator<AlignmentContext> {
                                 final boolean keepUniqueReadListInLIBS,
                                 final Collection<String> samples,
                                 final SAMFileHeader header) {
-        this(samIterator,
-                downsamplingInfo,
-                keepUniqueReadListInLIBS,
-                samples,
-                header,
-                false
+        this(samIterator, downsamplingInfo, keepUniqueReadListInLIBS, samples, header, false
         );
     }
 
@@ -175,11 +131,11 @@ public final class LocusIteratorByState implements Iterator<AlignmentContext> {
      *                                       according to standard coordinate-sorted BAM conventions
      * @param downsamplingInfo               meta-information about how to downsample the reads
      * @param keepUniqueReadListInLIBS       if true, we will keep the unique reads from the samIterator and make them
- *                                       available via the transferReadsFromAllPreviousPileups interface
+     *                                       available via the transferReadsFromAllPreviousPileups interface
      * @param samples                        a complete list of samples present in the read groups for the reads coming from samIterator.
-*                                       This is generally just the set of read group sample fields in the SAMFileHeader.  This
-*                                       list of samples may contain a null element, and all reads without read groups will
-*                                       be mapped to this null sample
+     *                                       This is generally just the set of read group sample fields in the SAMFileHeader.  This
+     *                                       list of samples may contain a null element, and all reads without read groups will
+     *                                       be mapped to this null sample
      * @param header                         header from the reads
      * @param includeReadsWithNsAtLoci       Include reads with Ns at loci (usually it is not needed)
      */
