@@ -176,6 +176,9 @@ public final class AssemblyRegionTrimmer {
         final int maxEnd = variantsInRegion.stream().mapToInt(VariantContext::getEnd).max().getAsInt();
         final SimpleInterval variantSpan = new SimpleInterval(region.getContig(), minStart, maxEnd);
 
+        // TODO: there is no reason why the padding used here, which adds space around variants for PairHMM, must equal
+        // TODO: the padding around the active region originally used for assembly.  We should make a new argument.
+        // TODO: furthermore, should it depend on, for example, whether any of the variants are long indels, or where STRs are?
         final SimpleInterval paddedVariantSpan = variantSpan.expandWithinContig(assemblyRegionArgs.variantPadding, sequenceDictionary);
         final Pair<SimpleInterval, SimpleInterval> nonVariantFlanks = getFlanks(region, paddedVariantSpan);
 

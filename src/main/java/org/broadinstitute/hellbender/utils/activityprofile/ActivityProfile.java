@@ -105,6 +105,7 @@ public class ActivityProfile {
         final List<AssemblyRegion> regions = new ArrayList<>();
 
         // TODO: max region size should be replaced with some max look-ahead distance parameter
+        // TODO: maybe max region size plus the max padding?
         while ( !stateList.isEmpty() && (atEndOfInterval || stateList.size() >= assemblyRegionArgs.maxAssemblyRegionSize)) {
             final ActivityProfileState first = stateList.get(0);
             final boolean isActiveRegion = first.getActiveProb() > activeProbThreshold;
