@@ -1,0 +1,5 @@
+id	label	dir
+d411f6b5-42fc-4668-b197-d0b382ed89c8	classic-none	gs://fc-secure-3c87b751-2951-4a10-a0a3-d13f8811183f/8c43bbf2-f71e-467d-8e90-1df4a1c530e5/HaplotypeCallerGvcf_GATK4/d411f6b5-42fc-4668-b197-d0b382ed89c8/call-MergeGVCFs/attempt-2
+a206b541-5c3c-4635-92e7-d3bb173078ca	classic-gam-lk	gs://fc-secure-3c87b751-2951-4a10-a0a3-d13f8811183f/a206b541-5c3c-4635-92e7-d3bb173078ca/HaplotypeCallerGvcf_GATK4/4a55966c-fb76-4e68-b622-9c7a73115575/call-MergeGVCFs
+f4ea3451-cbc0-4e3a-84f3-4f8b360b3fb3	dragstr-gam-lk	gs://fc-secure-3c87b751-2951-4a10-a0a3-d13f8811183f/f4ea3451-cbc0-4e3a-84f3-4f8b360b3fb3/HaplotypeCallerGvcf_GATK4/6aee1570-a861-4f50-ae5c-f448c1428ac6/call-MergeGVCFs
+321bfa41-f75c-4889-bbed-cfe1b56de2fe	dragstr		gs://fc-secure-3c87b751-2951-4a10-a0a3-d13f8811183f/50aa8796-01aa-4582-bd3b-514daf1311f3/HaplotypeCallerGvcf_GATK4/321bfa41-f75c-4889-bbed-cfe1b56de2fe/call-MergeGVCFs

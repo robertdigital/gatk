@@ -1,0 +1,43 @@
+{
+  "Benchmark.jexlVariantSelectors" : ["vc.isIndel() && vc.getHetCount() == 1",
+                                      "vc.isIndel() && vc.getHomVarCount() == 1",
+                                      "vc.isSNP() && vc.getHetCount() == 1",
+                                      "vc.isSNP() && vc.getHomVarCount() == 1"],
+  "Benchmark.variantSelectorLabels" : ["HetIndel","HomVarIndel","HetSNP","HomVarSNP"], 
+  
+  "Benchmark.reference": "${workspace.referenceData_hg38_ref_fasta}",
+  "Benchmark.referenceVersion": "hg38",
+  "Benchmark.refIndex": "${workspace.referenceData_hg38_ref_fasta_index}",
+  "Benchmark.refDict": "${workspace.referenceData_hg38_ref_dict}",
+  
+  "Benchmark.evalVcfs": [
+      "gs://broad-dsde-methods-dragen/dragstr-eval/runs-v4/classic-none/NA12878_wgs_pcrplus.vcf.gz",
+      "gs://broad-dsde-methods-dragen/dragstr-eval/runs-v4/classic-gam-lk/NA12878_wgs_pcrplus.vcf.gz",
+      "gs://broad-dsde-methods-dragen/dragstr-eval/runs-v4/dragstr/NA12878_wgs_pcrplus.vcf.gz",
+      "gs://broad-dsde-methods-dragen/dragstr-eval/runs-v4/dragstr-gam-lk/NA12878_wgs_pcrplus.vcf.gz"],
+  "Benchmark.evalVcfIndecies": [
+      "gs://broad-dsde-methods-dragen/dragstr-eval/runs-v4/classic-none/NA12878_wgs_pcrplus.vcf.gz.tbi",
+      "gs://broad-dsde-methods-dragen/dragstr-eval/runs-v4/classic-gam-lk/NA12878_wgs_pcrplus.vcf.gz.tbi",
+      "gs://broad-dsde-methods-dragen/dragstr-eval/runs-v4/dragstr/NA12878_wgs_pcrplus.vcf.gz.tbi",
+      "gs://broad-dsde-methods-dragen/dragstr-eval/runs-v4/dragstr-gam-lk/NA12878_wgs_pcrplus.vcf.gz.tbi"],
+  "Benchmark.evalLabels": [
+      "ClassicStandard", 
+      "ClassicNone", 
+      "Dragstr",
+      "DragstrStandardPriors"], 
+  
+  "Benchmark.truthVcfs": ["gs://broad-dsde-methods-ckachulis/benchmarking/Truth_Sets/HG001_GRCh38_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer_updated_dict_remove_PS_annotation.vcf.gz"] ,
+  "Benchmark.truthVcfIndecies": ["gs://broad-dsde-methods-ckachulis/benchmarking/Truth_Sets/HG001_GRCh38_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_PGandRTGphasetransfer_updated_dict_remove_PS_annotation.vcf.gz.tbi"] ,
+  "Benchmark.truthLabels": ["GIAB_HConf_3_3_2"],
+  
+  "Benchmark.hapMap": "gs://broad-dsde-methods-dragen/dragstr-eval/support-files/Homo_sapiens_assembly38.haplotype_database.txt",
+  
+  "Benchmark.stratIntervals":[
+        "gs://broad-dsde-methods-dragen/dragstr-eval/support-files/LCR_Hg38.bed",
+        "gs://broad-dsde-methods-dragen/dragstr-eval/support-files/HCR_hg38.bed", 
+        "gs://broad-dsde-methods-dragen/dragstr-eval/support-files/HG001_GRCh38_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel_noCENorHET7.bed"], 
+  "Benchmark.stratLabels": ["LCR", "HCR", "GIAB_HCR"],
+
+  "Benchmark.confidenceIntervals": 
+  ["gs://broad-dsde-methods-dragen/dragstr-eval/support-files/HG001_GRCh38_GIAB_highconf_CG-IllFB-IllGATKHC-Ion-10X-SOLID_CHROM1-X_v.3.3.2_highconf_nosomaticdel_noCENorHET7.bed"]
+}
