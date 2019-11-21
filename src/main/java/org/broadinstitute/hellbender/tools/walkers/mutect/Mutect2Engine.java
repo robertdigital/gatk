@@ -96,7 +96,7 @@ public final class Mutect2Engine implements AssemblyRegionEvaluator {
     private Optional<HaplotypeBAMWriter> haplotypeBAMWriter;
     private VariantAnnotatorEngine annotationEngine;
     private final SmithWatermanAligner aligner;
-    private AssemblyRegionTrimmer trimmer = new AssemblyRegionTrimmer();
+    private final AssemblyRegionTrimmer trimmer;
     private SomaticReferenceConfidenceModel referenceConfidenceModel = null;
 
     private final MutableInt callableSites = new MutableInt(0);
@@ -139,7 +139,7 @@ public final class Mutect2Engine implements AssemblyRegionEvaluator {
         likelihoodCalculationEngine = AssemblyBasedCallerUtils.createLikelihoodCalculationEngine(MTAC.likelihoodArgs);
         genotypingEngine = new SomaticGenotypingEngine(MTAC, normalSamples, annotationEngine);
         haplotypeBAMWriter = AssemblyBasedCallerUtils.createBamWriter(MTAC, createBamOutIndex, createBamOutMD5, header);
-        trimmer.initialize(MTAC.assemblerArgs, header.getSequenceDictionary());
+        trimmer = new AssemblyRegionTrimmer(MTAC.assemblerArgs, header.getSequenceDictionary());
         referenceConfidenceModel = new SomaticReferenceConfidenceModel(samplesList, header, 0, genotypingEngine);  //TODO: do something classier with the indel size arg
         final List<String> tumorSamples = ReadUtils.getSamplesFromHeader(header).stream().filter(this::isTumorSample).collect(Collectors.toList());
         f1R2CountsCollector = MTAC.f1r2TarGz == null ? Optional.empty() : Optional.of(new F1R2CountsCollector(MTAC.f1r2Args, header, MTAC.f1r2TarGz, tumorSamples));
