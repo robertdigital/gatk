@@ -251,6 +251,7 @@ public final class MathUtils {
         return NaturalLogUtils.log1mexp(b) * INV_LOG_10;
     }
 
+
     /**
      * Check that the log10 prob vector vector is well formed
      *
@@ -625,11 +626,11 @@ public final class MathUtils {
      */
     public static double log10SumLog10(final double a, final double b, final double c) {
         if (a >= b && a >= c)  {
-            return a + MathUtils.log10OneMinusPow10(b - a) + MathUtils.log10OneMinusPow10(c - a);
+            return a + Math.log10(1 + Math.pow(10.0, b - a)) +  Math.log10(1 + Math.pow(10.0, c - a));
         } else if (b >= c) {
-            return b + MathUtils.log10OneMinusPow10(a - b) + MathUtils.log10OneMinusPow10(c - b);
+            return b + Math.log10(1 + Math.pow(10.0, a - b)) +  Math.log10(1 + Math.pow(10.0, c - b));
         } else {
-            return c + MathUtils.log10OneMinusPow10(a - c) + MathUtils.log10OneMinusPow10(b - c);
+            return c + Math.log10(1 + Math.pow(10.0, a - c)) +  Math.log10(1 + Math.pow(10.0, b - c));
         }
     }
 

@@ -64,12 +64,12 @@ public final class AlleleFrequencyCalculator {
         final double api = dragstrParms.api(period, repeats);
         final double log10IndelFreq = api * -.1;
         final double log10RefFreq = MathUtils.log10OneMinusPow10(log10IndelFreq);
-        final double log10SnpFreq = log10IndelFreq + Math.log10(snpHeterozygosity);
+        final double log10SnpFreq = log10RefFreq + Math.log10(snpHeterozygosity);
         final double log10Sum = MathUtils.log10SumLog10(log10RefFreq, log10IndelFreq, log10SnpFreq);
         final double log10ScaleUp = Math.log10(scale) - log10Sum;
-        final double refPseudoCount = Math.pow(log10ScaleUp + log10RefFreq, 10);
-        final double indelPseudoCount = Math.pow(log10ScaleUp + log10IndelFreq, 10);
-        final double snpPseudoCount = Math.pow(log10ScaleUp + log10SnpFreq, 10);
+        final double refPseudoCount = Math.pow(10, log10ScaleUp + log10RefFreq);
+        final double indelPseudoCount = Math.pow(10, log10ScaleUp + log10IndelFreq);
+        final double snpPseudoCount = Math.pow(10, log10ScaleUp + log10SnpFreq);
         return  new AlleleFrequencyCalculator(refPseudoCount, snpPseudoCount, indelPseudoCount, ploidy);
     }
 
