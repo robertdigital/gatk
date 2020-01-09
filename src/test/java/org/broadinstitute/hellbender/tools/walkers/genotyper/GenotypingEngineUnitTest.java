@@ -1,6 +1,10 @@
 package org.broadinstitute.hellbender.tools.walkers.genotyper;
 
-import htsjdk.variant.variantcontext.*;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.broadinstitute.hellbender.GATKBaseTest;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.genotyper.IndexedSampleList;
@@ -15,16 +19,20 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class GenotypingEngineUnitTest extends GATKBaseTest {
 
     private static final Allele refAllele = Allele.create("TCCTTCCTTCCCTCCCTCCCTC", true);
     private static final Allele altT = Allele.create("T");
+    private static final Allele altInsLong = Allele.create("TCTTTCCTTCCCTCCCTCCCTCCCTCCCTTCCTTCCCTCCCTCCCTC");
+    private static final Allele altInsshort = Allele.create("TCCCTCCCTCCCTTCCTTCCCTCCCTCCCTC");
+
     private static final List<Allele> allelesDel = Collections.unmodifiableList(Arrays.asList(refAllele,
-                                                                                           Allele.create("TCTTTCCTTCCCTCCCTCCCTCCCTCCCTTCCTTCCCTCCCTCCCTC"),
-                                                                                           Allele.create("TCCCTCCCTCCCTTCCTTCCCTCCCTCCCTC"),
-                                                                                           altT,
-                                                                                              Allele.NON_REF_ALLELE));
+            altInsLong,
+            altInsshort,
+            altT,
+            Allele.NON_REF_ALLELE));
 
     private static final List<Allele> gtAlleles = GATKVariantContextUtils.noCallAlleles(2);
     private static final SampleList SAMPLES = new IndexedSampleList("test");
@@ -150,4 +158,26 @@ public class GenotypingEngineUnitTest extends GATKBaseTest {
         Assert.assertEquals(GenotypingEngine.noAllelesOrFirstAlleleIsNotNonRef(alleles), expectedValue);
     }
 
+
+    @Test
+    public void testTrialleleWithAmbiguousPL(){
+        final List<Allele> alleles = Arrays.asList(refAllele, altInsLong, altInsshort);
+
+        final List<int[]> pls = Collections.singletonList(new int[]{300, 0, 300, 5, 300, 300});
+        final VariantContext vc = new VariantContextBuilder()
+                .chr("chr1")
+                .start(1)
+                .stop(refAllele.length())
+                .alleles(alleles)
+                .genotypes(pls.stream()
+                        .map(pl -> new GenotypeBuilder("sample1")
+                                .alleles(Arrays.asList(refAllele, altInsshort))
+                                .PL(pl)
+                                .make())
+                        .collect(Collectors.toList()))
+                .make();
+
+        final VariantContext variantContext = genotypingEngine.calculateGenotypes(vc, GenotypeLikelihoodsCalculationModel.BOTH, Collections.emptyList());
+        Assert.assertNotNull(variantContext);
+    }
 }
