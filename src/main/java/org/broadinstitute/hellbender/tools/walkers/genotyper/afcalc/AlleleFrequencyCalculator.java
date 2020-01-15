@@ -87,6 +87,8 @@ public final class AlleleFrequencyCalculator {
         }
 
         double[] log10POfZeroCountsByAllele = new double[numAlleles];
+        double[] log10POfNonZeroCountsByAllele = new double[numAlleles];
+
         double log10PNoVariant = 0;
 
         final boolean spanningDeletionPresent = alleles.contains(Allele.SPAN_DEL);
@@ -94,6 +96,8 @@ public final class AlleleFrequencyCalculator {
 
         // re-usable buffers of the log10 genotype posteriors of genotypes missing each allele
         final List<DoubleArrayList> log10AbsentPosteriors = IntStream.range(0,numAlleles).mapToObj(n -> new DoubleArrayList()).collect(Collectors.toList());
+        final List<DoubleArrayList> log10PresentPosteriors = IntStream.range(0,numAlleles).mapToObj(n -> new DoubleArrayList()).collect(Collectors.toList());
+
         for (final Genotype g : vc.getGenotypes()) {
             if (!g.hasLikelihoods()) {
                 continue;
@@ -124,14 +128,22 @@ public final class AlleleFrequencyCalculator {
             // for each allele, we collect the log10 probabilities of genotypes in which the allele is absent, then add (in log space)
             // to get the log10 probability that the allele is absent in this sample
             log10AbsentPosteriors.forEach(DoubleArrayList::clear);  // clear the buffers.  Note that this is O(1) due to the primitive backing array
+            log10PresentPosteriors.forEach(DoubleArrayList::clear);  // clear the buffers.  Note that this is O(1) due to the primitive backing array
+
             for (int genotype = 0; genotype < glCalc.genotypeCount(); genotype++) {
                 final double log10GenotypePosterior = log10GenotypePosteriors[genotype];
                 glCalc.genotypeAlleleCountsAt(genotype).forEachAbsentAlleleIndex(a -> log10AbsentPosteriors.get(a).add(log10GenotypePosterior), numAlleles);
+                glCalc.genotypeAlleleCountsAt(genotype).forEachPresentAlleleIndex(a -> log10PresentPosteriors.get(a).add(log10GenotypePosterior), numAlleles);
             }
 
             final double[] log10PNoAllele = log10AbsentPosteriors.stream()
                     .mapToDouble(buffer -> MathUtils.log10SumLog10(buffer.toDoubleArray()))
                     .map(x -> Math.min(0, x)).toArray();    // if prob of non hom ref > 1 due to finite precision, short-circuit to avoid NaN
+
+            final double[] log10PYesAllele = log10PresentPosteriors.stream()
+                    .mapToDouble(buffer -> MathUtils.log10SumLog10(buffer.toDoubleArray()))
+                    .map(x -> Math.min(0, x)).toArray();    // if prob of non hom ref > 1 due to finite precision, short-circuit to avoid NaN
+
 
             // multiply the cumulative probabilities of alleles being absent, which is addition of logs
             MathUtils.addToArrayInPlace(log10POfZeroCountsByAllele, log10PNoAllele);

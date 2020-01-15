@@ -1,14 +1,22 @@
 package org.broadinstitute.hellbender.tools.walkers.genotyper;
 
 import com.google.common.annotations.VisibleForTesting;
-import htsjdk.variant.variantcontext.*;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.GenotypeLikelihoods;
+import htsjdk.variant.variantcontext.GenotypesContext;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.broadinstitute.barclay.argparser.CommandLineException;
 import org.broadinstitute.hellbender.tools.walkers.annotator.VariantAnnotatorEngine;
-import org.broadinstitute.hellbender.tools.walkers.genotyper.afcalc.*;
+import org.broadinstitute.hellbender.tools.walkers.genotyper.afcalc.AFCalculationResult;
+import org.broadinstitute.hellbender.tools.walkers.genotyper.afcalc.AFPriorProvider;
+import org.broadinstitute.hellbender.tools.walkers.genotyper.afcalc.AlleleFrequencyCalculator;
+import org.broadinstitute.hellbender.tools.walkers.genotyper.afcalc.CustomAFPriorProvider;
+import org.broadinstitute.hellbender.tools.walkers.genotyper.afcalc.HeterozygosityAFPriorProvider;
 import org.broadinstitute.hellbender.tools.walkers.haplotypecaller.AssemblyBasedCallerUtils;
 import org.broadinstitute.hellbender.utils.MathUtils;
 import org.broadinstitute.hellbender.utils.QualityUtils;
@@ -19,7 +27,16 @@ import org.broadinstitute.hellbender.utils.variant.GATKVCFConstants;
 import org.broadinstitute.hellbender.utils.variant.GATKVCFHeaderLines;
 import org.broadinstitute.hellbender.utils.variant.GATKVariantContextUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -146,7 +163,8 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
      * @param model                              GL calculation model
      * @return                                   VC with assigned genotypes
      */
-    public VariantContext calculateGenotypes(final VariantContext vc, final GenotypeLikelihoodsCalculationModel model, final List<VariantContext> givenAlleles) {
+
+    private VariantContext calculateGenotypes(final VariantContext vc, final GenotypeLikelihoodsCalculationModel model, final List<VariantContext> givenAlleles) {
         // if input VC can't be genotyped, exit with either null VCC or, in case where we need to emit all sites, an empty call
         if (hasTooManyAlternativeAlleles(vc) || vc.getNSamples() == 0) {
             return null;
@@ -154,7 +172,6 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
 
         final int defaultPloidy = configuration.genotypeArgs.samplePloidy;
         final int maxAltAlleles = configuration.genotypeArgs.MAX_ALTERNATE_ALLELES;
-
 
         VariantContext reducedVC = vc;
         if (maxAltAlleles < vc.getAlternateAlleles().size()) {
@@ -164,7 +181,6 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
             reducedVC = new VariantContextBuilder(vc).alleles(allelesToKeep).genotypes(reducedGenotypes).make();
         }
 
-
         final AFCalculationResult AFresult = alleleFrequencyCalculator.calculate(reducedVC, defaultPloidy);
         final OutputAlleleSubset outputAlternativeAlleles = calculateOutputAlleleSubset(AFresult, vc, givenAlleles);
 
@@ -173,22 +189,21 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
 
         // note the math.abs is necessary because -10 * 0.0 => -0.0 which isn't nice
         final double log10Confidence =
-                ! outputAlternativeAlleles.siteIsMonomorphic || configuration.annotateAllSitesWithPLs
-                        ? AFresult.log10ProbOnlyRefAlleleExists() + 0.0 : AFresult.log10ProbVariantPresent() + 0.0 ;
-
+                !outputAlternativeAlleles.siteIsMonomorphic || configuration.annotateAllSitesWithPLs
+                        ? AFresult.log10ProbOnlyRefAlleleExists() + 0.0 : AFresult.log10ProbVariantPresent() + 0.0;
 
         // Add 0.0 removes -0.0 occurrences.
         final double phredScaledConfidence = (-10.0 * log10Confidence) + 0.0;
 
         // return a null call if we don't pass the confidence cutoff or the most likely allele frequency is zero
         // skip this if we are already looking at a vc with NON_REF as the first alt allele i.e. if we are in GenotypeGVCFs
-        if ( !passesEmitThreshold(phredScaledConfidence, outputAlternativeAlleles.siteIsMonomorphic) && !emitAllActiveSites()
+        if (!passesEmitThreshold(phredScaledConfidence, outputAlternativeAlleles.siteIsMonomorphic) && !emitAllActiveSites()
                 && noAllelesOrFirstAlleleIsNotNonRef(outputAlternativeAlleles.alleles) && givenAlleles.isEmpty()) {
             return null;
         }
 
         // return a null call if we aren't forcing site emission and the only alt allele is a spanning deletion
-        if (! emitAllActiveSites() && outputAlternativeAlleles.alleles.size() == 1 && Allele.SPAN_DEL.equals(outputAlternativeAlleles.alleles.get(0))) {
+        if (!emitAllActiveSites() && outputAlternativeAlleles.alleles.size() == 1 && Allele.SPAN_DEL.equals(outputAlternativeAlleles.alleles.get(0))) {
             return null;
         }
 
@@ -197,18 +212,18 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
         final VariantContextBuilder builder = new VariantContextBuilder(callSourceString(), vc.getContig(), vc.getStart(), vc.getEnd(), outputAlleles);
 
         builder.log10PError(log10Confidence);
-        if ( ! passesCallThreshold(phredScaledConfidence) ) {
+        if (!passesCallThreshold(phredScaledConfidence)) {
             builder.filter(GATKVCFConstants.LOW_QUAL_FILTER_NAME);
         }
 
         // create the genotypes
-        //TODO: omit subsetting if output alleles is not a proper subset of vc.getAlleles
         final GenotypesContext genotypes = outputAlleles.size() == 1 ? GATKVariantContextUtils.subsetToRefOnly(vc, defaultPloidy) :
-                AlleleSubsettingUtils.subsetAlleles(vc.getGenotypes(), defaultPloidy, vc.getAlleles(), outputAlleles, GenotypeAssignmentMethod.USE_PLS_TO_ASSIGN, vc.getAttributeAsInt(VCFConstants.DEPTH_KEY, 0));
+                outputAlleles.size() == vc.getAlleles().size() ? vc.getGenotypes() :
+                        AlleleSubsettingUtils.subsetAlleles(vc.getGenotypes(), defaultPloidy, vc.getAlleles(), outputAlleles, GenotypeAssignmentMethod.USE_PLS_TO_ASSIGN, vc.getAttributeAsInt(VCFConstants.DEPTH_KEY, 0));
 
         // calculating strand bias involves overwriting data structures, so we do it last
         final Map<String, Object> attributes = composeCallAttributes(vc, outputAlternativeAlleles.alternativeAlleleMLECounts(),
-                AFresult, outputAlternativeAlleles.outputAlleles(vc.getReference()),genotypes);
+                AFresult, outputAlternativeAlleles.outputAlleles(vc.getReference()), genotypes);
 
         return builder.genotypes(genotypes).attributes(attributes).make();
     }
@@ -266,14 +281,26 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
         final List<Allele> outputAlleles = new ArrayList<>();
         final List<Integer> mleCounts = new ArrayList<>();
         boolean siteIsMonomorphic = true;
-        final List<Allele> alleles = afCalculationResult.getAllelesUsedInGenotyping();
+        //wrap in another list so that it isn't immutable:
+        final List<Allele> allelesUsedInGenotyping = afCalculationResult.getAllelesUsedInGenotyping();
+
+        final List<Allele> alleles = new ArrayList<>(allelesUsedInGenotyping);
+
+        alleles.removeIf(Allele::isReference);
+
         final int alternativeAlleleCount = alleles.size() - 1;
         int referenceAlleleSize = 0;
 
         final Set<Allele> forcedAlleles = AssemblyBasedCallerUtils.getAllelesConsistentWithGivenAlleles(givenAlleles, vc);
 
+        final Comparator<Allele> comparator = Comparator.comparingDouble(afCalculationResult::getLog10PosteriorOfAlleleAbsent).reversed();
+        alleles.sort(comparator);
+        //had to remove reference for the sorting, so now adding it back in.
+        afCalculationResult.getAllelesUsedInGenotyping().stream().filter(Allele::isReference).limit(1).forEach(alleles::add);
+
+        boolean removedOneAllele = false;
         for (final Allele allele : alleles) {
-            if (allele.isReference() ) {
+            if (allele.isReference()) {
                 referenceAlleleSize = allele.length();
             } else {
                 // we want to keep the NON_REF symbolic allele but only in the absence of a non-symbolic allele, e.g.
@@ -284,15 +311,19 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
                 //it's possible that the upstream deletion that spanned this site was not emitted, mooting the symbolic spanning deletion allele
                 final boolean isSpuriousSpanningDeletion = GATKVCFConstants.isSpanningDeletion(allele) && !isVcCoveredByDeletion(vc);
 
-                final boolean toOutput = (isPlausible || forceKeepAllele(allele) || isNonRefWhichIsLoneAltAllele || forcedAlleles.contains(allele) ) && !isSpuriousSpanningDeletion;
+                final boolean toOutput = ( isPlausible || forceKeepAllele(allele) || isNonRefWhichIsLoneAltAllele || forcedAlleles.contains(allele) ) && !isSpuriousSpanningDeletion;
 
-                siteIsMonomorphic &= !(isPlausible && !isSpuriousSpanningDeletion);
 
-                if (toOutput) {
+                if (toOutput || removedOneAllele) {
                     outputAlleles.add(allele);
                     mleCounts.add(afCalculationResult.getAlleleCountAtMLE(allele));
+                    //todo: deal with this (should be moved out of recursive function)
                     recordDeletion(referenceAlleleSize - allele.length(), vc);
+                } else {
+                    removedOneAllele = true;
                 }
+                //todo: fix this.
+                siteIsMonomorphic &= !(isPlausible && !isSpuriousSpanningDeletion) && !removedOneAllele ;
             }
         }
 
