@@ -98,14 +98,14 @@ public final class AlleleFrequencyCalculator {
         final List<DoubleArrayList> log10AbsentPosteriors = IntStream.range(0,numAlleles).mapToObj(n -> new DoubleArrayList()).collect(Collectors.toList());
         final List<DoubleArrayList> log10PresentPosteriors = IntStream.range(0,numAlleles).mapToObj(n -> new DoubleArrayList()).collect(Collectors.toList());
 
-        for (final Genotype g : vc.getGenotypes()) {
-            if (!g.hasLikelihoods()) {
+        for (final Genotype sampleGenotype : vc.getGenotypes()) {
+            if (!sampleGenotype.hasLikelihoods()) {
                 continue;
             }
-            final int ploidy = g.getPloidy() == 0 ? defaultPloidy : g.getPloidy();
+            final int ploidy = sampleGenotype.getPloidy() == 0 ? defaultPloidy : sampleGenotype.getPloidy();
             final GenotypeLikelihoodCalculator glCalc = GL_CALCS.getInstance(ploidy, numAlleles);
 
-            final double[] log10GenotypePosteriors = log10NormalizedGenotypePosteriors(g, glCalc, log10AlleleFrequencies);
+            final double[] log10GenotypePosteriors = log10NormalizedGenotypePosteriors(sampleGenotype, glCalc, log10AlleleFrequencies);
 
             //the total probability
             if (!spanningDeletionPresent) {

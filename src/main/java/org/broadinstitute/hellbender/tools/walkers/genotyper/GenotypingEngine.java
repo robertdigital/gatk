@@ -163,8 +163,7 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
      * @param model                              GL calculation model
      * @return                                   VC with assigned genotypes
      */
-
-    private VariantContext calculateGenotypes(final VariantContext vc, final GenotypeLikelihoodsCalculationModel model, final List<VariantContext> givenAlleles) {
+    public VariantContext calculateGenotypes(final VariantContext vc, final GenotypeLikelihoodsCalculationModel model, final List<VariantContext> givenAlleles) {
         // if input VC can't be genotyped, exit with either null VCC or, in case where we need to emit all sites, an empty call
         if (hasTooManyAlternativeAlleles(vc) || vc.getNSamples() == 0) {
             return null;
@@ -281,24 +280,12 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
         final List<Allele> outputAlleles = new ArrayList<>();
         final List<Integer> mleCounts = new ArrayList<>();
         boolean siteIsMonomorphic = true;
-        //wrap in another list so that it isn't immutable:
-        final List<Allele> allelesUsedInGenotyping = afCalculationResult.getAllelesUsedInGenotyping();
-
-        final List<Allele> alleles = new ArrayList<>(allelesUsedInGenotyping);
-
-        alleles.removeIf(Allele::isReference);
-
+        final List<Allele> alleles = afCalculationResult.getAllelesUsedInGenotyping();
         final int alternativeAlleleCount = alleles.size() - 1;
         int referenceAlleleSize = 0;
 
         final Set<Allele> forcedAlleles = AssemblyBasedCallerUtils.getAllelesConsistentWithGivenAlleles(givenAlleles, vc);
 
-        final Comparator<Allele> comparator = Comparator.comparingDouble(afCalculationResult::getLog10PosteriorOfAlleleAbsent).reversed();
-        alleles.sort(comparator);
-        //had to remove reference for the sorting, so now adding it back in.
-        afCalculationResult.getAllelesUsedInGenotyping().stream().filter(Allele::isReference).limit(1).forEach(alleles::add);
-
-        boolean removedOneAllele = false;
         for (final Allele allele : alleles) {
             if (allele.isReference()) {
                 referenceAlleleSize = allele.length();
@@ -311,19 +298,15 @@ public abstract class GenotypingEngine<Config extends StandardCallerArgumentColl
                 //it's possible that the upstream deletion that spanned this site was not emitted, mooting the symbolic spanning deletion allele
                 final boolean isSpuriousSpanningDeletion = GATKVCFConstants.isSpanningDeletion(allele) && !isVcCoveredByDeletion(vc);
 
-                final boolean toOutput = ( isPlausible || forceKeepAllele(allele) || isNonRefWhichIsLoneAltAllele || forcedAlleles.contains(allele) ) && !isSpuriousSpanningDeletion;
+                final boolean toOutput = (isPlausible || forceKeepAllele(allele) || isNonRefWhichIsLoneAltAllele || forcedAlleles.contains(allele) ) && !isSpuriousSpanningDeletion;
 
+                siteIsMonomorphic &= !(isPlausible && !isSpuriousSpanningDeletion);
 
-                if (toOutput || removedOneAllele) {
+                if (toOutput) {
                     outputAlleles.add(allele);
                     mleCounts.add(afCalculationResult.getAlleleCountAtMLE(allele));
-                    //todo: deal with this (should be moved out of recursive function)
                     recordDeletion(referenceAlleleSize - allele.length(), vc);
-                } else {
-                    removedOneAllele = true;
                 }
-                //todo: fix this.
-                siteIsMonomorphic &= !(isPlausible && !isSpuriousSpanningDeletion) && !removedOneAllele ;
             }
         }
 

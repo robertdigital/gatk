@@ -95,12 +95,12 @@ public class GenotypingEngineUnitTest extends GATKBaseTest {
                 genotypes(genotypesSpanDel).make();
         final VariantContext vcOut1 = genotypingEngine.calculateGenotypes(vcSpanDel, GenotypeLikelihoodsCalculationModel.INDEL);
         //the site is monomorphic, which becomes null
-        Assert.assertTrue(vcOut1 == null);
+        Assert.assertNull(vcOut1);
 
         final List<Allele> mutliAllelicWithSpanDel = new ArrayList<>(Arrays.asList(refAlleleSpanDel, Allele.SPAN_DEL,
                 Allele.create("T")));
         final List<Genotype> regressionGenotypes = Arrays.asList(
-                new GenotypeBuilder("s1564").alleles(gtAlleles).PL(new int[]{ 42,43,45,3,3,0}).make(),
+                new GenotypeBuilder("s1564").alleles(gtAlleles).PL(new int[]{42,43,45,3,3,0}).make(),
                 new GenotypeBuilder("s1741").alleles(gtAlleles).PL(new int[]{0,0,0,0,0,0}).make(),
                 new GenotypeBuilder("s1851").alleles(gtAlleles).PL(new int[]{0,15,250,15,250,250}).make(),
                 new GenotypeBuilder("s1852").alleles(gtAlleles).PL(new int[]{0,9,184,9,184,184}).make(),
@@ -123,7 +123,7 @@ public class GenotypingEngineUnitTest extends GATKBaseTest {
                 genotypes(regressionGenotypes).make();
         final VariantContext vcOut2 = genotypingEngine.calculateGenotypes(vcMultiWithSpanDel, GenotypeLikelihoodsCalculationModel.SNP);
         //low quality T should get dropped, leaving only star, which shouldn't be output
-        Assert.assertTrue(vcOut2 == null);
+        Assert.assertNull(vcOut2);
     }
 
     @Test //test for https://github.com/broadinstitute/gatk/issues/2530
@@ -154,30 +154,46 @@ public class GenotypingEngineUnitTest extends GATKBaseTest {
     }
 
     @Test(dataProvider = "getAllelesLists")
-    public void testNoAllelesOrFirstAlleleIsNotNonRef(List<Allele> alleles, boolean expectedValue){
+    public void testNoAllelesOrFirstAlleleIsNotNonRef(final List<Allele> alleles, final boolean expectedValue){
         Assert.assertEquals(GenotypingEngine.noAllelesOrFirstAlleleIsNotNonRef(alleles), expectedValue);
     }
 
+    @DataProvider()
+    Object[][] AlleleTrimmingAmbigiousPLData(){
+        return new Object[][]{
+                new Object[]{Arrays.asList(refAllele, altInsLong), new int[]{300, 0, 300}, 2},
+                new Object[]{Arrays.asList(refAllele, altInsLong), new int[]{3, 0, 30}, 1},
+                new Object[]{Arrays.asList(refAllele, altInsLong, altInsshort), new int[]{300, 0, 300, 100, 300, 300}, 2},
+                new Object[]{Arrays.asList(refAllele, altInsLong, altInsshort), new int[]{300, 0, 300, 5, 300, 300}, 3},
+                new Object[]{Arrays.asList(refAllele, altInsLong, altInsshort), new int[]{300, 0, 300, 0, 300, 300}, 3},
+                new Object[]{Arrays.asList(refAllele, altInsLong, altInsshort, altT), new int[]{300, 0, 300, 5, 300, 300, 300, 300, 300, 300}, 3}
+        };
+    }
 
-    @Test
-    public void testTrialleleWithAmbiguousPL(){
-        final List<Allele> alleles = Arrays.asList(refAllele, altInsLong, altInsshort);
+    @Test(dataProvider = "AlleleTrimmingAmbigiousPLData")
+    public void testTrialleleWithAmbiguousPL(final List<Allele> alleles, final int[] pl, final int expectedEventualAlleles) {
 
-        final List<int[]> pls = Collections.singletonList(new int[]{300, 0, 300, 5, 300, 300});
+        final List<int[]> pls = Collections.singletonList(pl);
         final VariantContext vc = new VariantContextBuilder()
                 .chr("chr1")
                 .start(1)
                 .stop(refAllele.length())
                 .alleles(alleles)
                 .genotypes(pls.stream()
-                        .map(pl -> new GenotypeBuilder("sample1")
-                                .alleles(Arrays.asList(refAllele, altInsshort))
-                                .PL(pl)
+                        .map(pl_ -> new GenotypeBuilder("sample1")
+                                .alleles(Arrays.asList(alleles.get(0), alleles.get(1)))
+                                .PL(pl_)
                                 .make())
                         .collect(Collectors.toList()))
                 .make();
 
-        final VariantContext variantContext = genotypingEngine.calculateGenotypes(vc, GenotypeLikelihoodsCalculationModel.BOTH, Collections.emptyList());
-        Assert.assertNotNull(variantContext);
+        final VariantContext variantContext = genotypingEngine.calculateGenotypes(vc, GenotypeLikelihoodsCalculationModel.BOTH);
+        if (expectedEventualAlleles != 1) {
+            Assert.assertNotNull(variantContext);
+            Assert.assertEquals(variantContext.getAlleles().size(), expectedEventualAlleles,
+                    variantContext.getAlleles().stream().map(Allele::toString).collect(Collectors.joining(",")));
+        } else {
+            Assert.assertNull(variantContext);
+        }
     }
 }
