@@ -97,8 +97,11 @@ public class VariantContextComparisonResults {
                     resultString.append("  Genotypes: actual(" + actual.getGenotypes().getSampleNamesOrderedByName().stream().collect(Collectors.joining(",")) + ") vs " +
                             "expected(" + expected.getGenotypes().getSampleNamesOrderedByName().stream().collect(Collectors.joining(",")) + ")\n");
                     for(GenotypeComparisonResults genotypeResults : genotypeComparisonResults){
-                        genotypeResults.getResultStringVerbose();
+                        resultString.append("  " + genotypeResults.getResultStringVerbose());
                     }
+                }
+                else{
+                    resultString.append("  " + attribute.getName() + ": actual(" + actualValue + ") vs expected(" + expectedValue + ")\n");
                 }
             }
         }

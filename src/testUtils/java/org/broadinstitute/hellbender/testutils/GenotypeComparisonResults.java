@@ -2,17 +2,15 @@ package org.broadinstitute.hellbender.testutils;
 
 import htsjdk.variant.variantcontext.Genotype;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GenotypeComparisonResults {
 
     private Genotype actual;
     private Genotype expected;
-    private List<GenotypeAttributeEnum> mismatchedAttributes = new LinkedList<>();
-    private List<String> mismatchedExtendedAttributes = new LinkedList<>();
+    private Set<GenotypeAttributeEnum> mismatchedAttributes = new HashSet<>();
+    private Set<String> mismatchedExtendedAttributes = new HashSet<>();
 
     public GenotypeComparisonResults(Genotype actual, Genotype expected){
         this.actual = actual;
@@ -27,7 +25,7 @@ public class GenotypeComparisonResults {
         mismatchedAttributes.add(attributeName);
     }
 
-    public List<GenotypeAttributeEnum> getMismatchedAttributes(){
+    public Set<GenotypeAttributeEnum> getMismatchedAttributes(){
         return mismatchedAttributes;
     }
 
@@ -39,7 +37,7 @@ public class GenotypeComparisonResults {
         mismatchedExtendedAttributes.addAll(attributes);
     }
 
-    public List<String> getMismatchedExtendedAttributes(){
+    public Set<String> getMismatchedExtendedAttributes(){
         return mismatchedExtendedAttributes;
     }
 

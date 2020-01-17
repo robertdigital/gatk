@@ -170,9 +170,6 @@ public class VariantContextComparison {
                         results.addMismatchedAttribute(VariantContextAttributeEnum.GENOTYPES);
                     }
                     else if(actual.hasGenotypes() && expected.hasGenotypes()){
-                        if(!actual.getSampleNamesOrderedByName().equals(expected.getSampleNamesOrderedByName())){
-                            results.addMismatchedAttribute(VariantContextAttributeEnum.GENOTYPES);
-                        }
                         for(String sampleName : expected.getSampleNames()){
                             if(actual.hasGenotype(sampleName)){
                                 final GenotypeComparisonResults comparisonResults = new GenotypeComparison.Builder(actual.getGenotype(sampleName), expected.getGenotype(sampleName))
@@ -182,6 +179,11 @@ public class VariantContextComparison {
                                         .compare().getResults();
                                 results.addGenotypeComparisonResult(comparisonResults);
                                 if(!results.getMismatchedAttributes().contains(VariantContextAttributeEnum.GENOTYPES) && !comparisonResults.isMatch()){
+                                    results.addMismatchedAttribute(VariantContextAttributeEnum.GENOTYPES);
+                                }
+                            }
+                            else{
+                                if(!results.getMismatchedAttributes().contains(VariantContextAttributeEnum.GENOTYPES)){
                                     results.addMismatchedAttribute(VariantContextAttributeEnum.GENOTYPES);
                                 }
                             }
@@ -200,86 +202,6 @@ public class VariantContextComparison {
                 }
             }
         }
-        /* TODO: Remove this
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.SOURCE)){
-            if(!VariantContextTestUtils.checkFieldEquals(actual.getSource(), expected.getSource())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.SOURCE);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.CONTIG)){
-            if(!VariantContextTestUtils.checkFieldEquals(actual.getContig(), expected.getContig())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.CONTIG);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.START)){
-            if(!VariantContextTestUtils.checkFieldEquals(actual.getStart(), expected.getStart())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.START);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.END)){
-            if(!VariantContextTestUtils.checkFieldEquals(actual.getEnd(), expected.getEnd())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.END);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.ID)){
-            if(!VariantContextTestUtils.checkFieldEquals(actual.getID(), expected.getID())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.ID);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.ALLELES)){
-            if(!VariantContextTestUtils.checkFieldEquals(actual.getAlleles(), expected.getAlleles())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.ALLELES);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.FILTERS)){
-            if(!VariantContextTestUtils.checkFieldEquals(actual.getFilters(), expected.getFilters())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.FILTERS);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.TYPE)){
-            if(!VariantContextTestUtils.checkFieldEquals(actual.getType(), expected.getType())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.TYPE);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.PHRED_SCALED_QUALITY)){
-            if(!BaseTest.equalsDoubleSmart(actual.getPhredScaledQual(), expected.getPhredScaledQual())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.PHRED_SCALED_QUALITY);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.ATTRIBUTES)){
-            List<String> errorKeys = VariantContextTestUtils.checkAttributesEquals(
-                    VariantContextTestUtils.filterIgnoredAttributes(actual.getAttributes(), extendedAttributesToIgnore),
-                    VariantContextTestUtils.filterIgnoredAttributes(expected.getAttributes(), extendedAttributesToIgnore)
-            );
-            if(!errorKeys.isEmpty()){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.ATTRIBUTES);
-                results.addMismatchedExtendedAttributes(errorKeys);
-            }
-        }
-        if(!attributesToIgnore.contains(VariantContextAttributeEnum.GENOTYPES)){
-            if((!actual.hasGenotypes() && expected.hasGenotypes()) || (actual.hasGenotypes() && !expected.hasGenotypes())){
-                results.addMismatchedAttribute(VariantContextAttributeEnum.GENOTYPES);
-            }
-            else if(actual.hasGenotypes() && expected.hasGenotypes()){
-                if(!actual.getSampleNamesOrderedByName().equals(expected.getSampleNamesOrderedByName())){
-                    results.addMismatchedAttribute(VariantContextAttributeEnum.GENOTYPES);
-                }
-                for(String sampleName : expected.getSampleNames()){
-                    if(actual.hasGenotype(sampleName)){
-                        final GenotypeComparisonResults comparisonResults = new GenotypeComparison.Builder(actual.getGenotype(sampleName), expected.getGenotype(sampleName))
-                                .addAttributesToIgnore(this.genotypeAttributesToIgnore)
-                                .addExtendedAttributesToIgnore(this.genotypeExtendedAttributesToIgnore)
-                                .build()
-                                .compare().getResults();
-                        results.addGenotypeComparisonResult(comparisonResults);
-                        if(!results.getMismatchedAttributes().get(results.getMismatchedAttributes().size() - 1).equals(VariantContextAttributeEnum.GENOTYPES)){
-                            results.addMismatchedAttribute(VariantContextAttributeEnum.GENOTYPES);
-                        }
-                    }
-                }
-            }
-        }
-        */
 
         this.results = results;
         return this;
