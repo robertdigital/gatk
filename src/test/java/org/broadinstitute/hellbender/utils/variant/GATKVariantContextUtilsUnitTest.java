@@ -2348,14 +2348,36 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
         attr2.put("list", Arrays.asList(1, 2, 3, 4));
         attr2.put("list2", "1,2,3,4,5");
 
-        VariantContext vc1 = new VariantContextBuilder("vc1", "1", 1, 1, Arrays.asList(Aref, T, G)).genotypes(Arrays.asList(g1, g2)).make();
-        VariantContext vc2 = new VariantContextBuilder("vc2", "1", 1, 1, Arrays.asList(Aref, T, G, C)).genotypes(Arrays.asList(g1Copy, g2)).make();
-        VariantContext vc3 = new VariantContextBuilder("vc3", "2", 2, 2, Arrays.asList(Aref, T, G)).genotypes(Arrays.asList(g1, g2)).make();
-        VariantContext vc4 = new VariantContextBuilder("vc4", "1", 1, 1, Arrays.asList(Aref)).make();
-        VariantContext vc5 = new VariantContextBuilder("vc5", "1", 1, 1, Arrays.asList(Aref, T, G, C)).genotypes(Arrays.asList(g1, g2, g3)).make();
-        VariantContext vc6 = new VariantContextBuilder("vc6", "1", 1, 1, Arrays.asList(Aref)).attributes(attr1).make();
-        VariantContext vc7 = new VariantContextBuilder("vc7", "1", 1, 1, Arrays.asList(Aref)).attributes(attr2).make();
-        VariantContext vc8 = new VariantContextBuilder("vc8", "1", 1, 1, Arrays.asList(Aref, T, G)).genotypes(Arrays.asList(g4, g2)).make();
+        VariantContext vc1 = new VariantContextBuilder("vc1", "1", 1, 1, Arrays.asList(Aref, T, G))
+                .genotypes(Arrays.asList(g1, g2))
+                .make();
+        VariantContext vc2 = new VariantContextBuilder("vc2", "1", 1, 1, Arrays.asList(Aref, T, G, C))
+                .genotypes(Arrays.asList(g1Copy, g2))
+                .make();
+        VariantContext vc3 = new VariantContextBuilder("vc3", "1", 1, 1, Arrays.asList(Aref))
+                .make();
+        VariantContext vc4 = new VariantContextBuilder("vc4", "1", 1, 1, Arrays.asList(Aref, T, G, C))
+                .genotypes(Arrays.asList(g1, g2, g3))
+                .make();
+        VariantContext vc5 = new VariantContextBuilder("vc5", "1", 1, 1, Arrays.asList(Aref, T, G))
+                .genotypes(Arrays.asList(g4, g2))
+                .make();
+        VariantContext vc6 = new VariantContextBuilder("vc6", "1", 1, 1, Arrays.asList(Aref, T, G))
+                .genotypes(Arrays.asList(g1, g2))
+                .id("testID")
+                .filter("testFilter")
+                .log10PError(-0.01)
+                .attributes(attr1)
+                .make();
+        VariantContext vc7 = new VariantContextBuilder("vc7", "2", 2, 2, Arrays.asList(Aref, T, C))
+                .genotypes(Arrays.asList(g1, g3))
+                .id("testID2")
+                .filters(new HashSet<>(Arrays.asList("testFilter", "testFilter2")))
+                .log10PError(-0.02)
+                .attributes(attr2)
+                .make();
+
+
 
         return new Object[][]{
                 //Source and Alleles different, one of the genotypes in vc2 is a copy of one in vc1, so genotypes should not be a mismatch
@@ -2363,45 +2385,40 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
                         Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
                         new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE, VariantContextAttributeEnum.ALLELES)),
                         Collections.<String>emptySet()},
-                //Contig, Start, and End different, ignore Source difference
+                //Different alleles, 2 genotypes vs no genotypes, type should be different because vc3 has no genotypes, ignore Source
                 {vc1, vc3, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE)),
-                        Collections.<String>emptyList(), Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
-                        new HashSet<>(Arrays.asList(VariantContextAttributeEnum.CONTIG, VariantContextAttributeEnum.START, VariantContextAttributeEnum.END)),
-                        Collections.<String>emptySet()},
-                //Different alleles, 2 genotypes vs no genotypes, type should be different because vc4 has no genotypes, ignore Source
-                {vc1, vc4, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE)),
                         Collections.<String>emptyList(), Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
                         new HashSet<>(Arrays.asList(VariantContextAttributeEnum.ALLELES, VariantContextAttributeEnum.GENOTYPES, VariantContextAttributeEnum.TYPE)),
                         Collections.<String>emptySet()},
                 //2 genotypes vs 3 genotypes (where vc1's genotypes are a subset of vc2's), different alleles, ignore Source
-                {vc1, vc5, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE)),
+                {vc1, vc4, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE)),
                         Collections.<String>emptyList(), Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
                         new HashSet<>(Arrays.asList(VariantContextAttributeEnum.ALLELES, VariantContextAttributeEnum.GENOTYPES)),
                         Collections.<String>emptySet()},
                 //Ignore genotype comparison and source, different alleles and type
-                {vc1, vc4, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE, VariantContextAttributeEnum.GENOTYPES)),
+                {vc1, vc3, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE, VariantContextAttributeEnum.GENOTYPES)),
                         Collections.<String>emptyList(), Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
                         new HashSet<>(Arrays.asList(VariantContextAttributeEnum.ALLELES, VariantContextAttributeEnum.TYPE)),
                         Collections.<String>emptySet()},
-                //Attribute lists have differences, but ignore the attributes that are different, ensure list vs string equivalency works
-                {vc6, vc7, Collections.<VariantContextAttributeEnum>emptySet(),
-                        Arrays.asList("string", "string2"), Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
-                        new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE)), Collections.<String>emptySet()},
-                //Different length attribute lists(expected longer than actual)
-                {vc6, vc7, Collections.<VariantContextAttributeEnum>emptySet(),
-                        Collections.<String>emptyList(), Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
-                        new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE, VariantContextAttributeEnum.ATTRIBUTES)),
-                        new HashSet<>(Arrays.asList("string", "string2"))},
                 //Genotypes match but have different values for GQ
-                {vc1, vc8, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE)), Collections.<String>emptyList(),
+                {vc1, vc5, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE)), Collections.<String>emptyList(),
                         Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
                         new HashSet<>(Arrays.asList(VariantContextAttributeEnum.GENOTYPES)),
                         Collections.<String>emptySet()},
-                //Genotypes match but have different values for GQ, ignore the differing phased values
-                {vc1, vc8, Collections.<VariantContextAttributeEnum>emptySet(), Collections.<String>emptyList(),
+                //Different source, alleles, contig, start, end, genotypes, id, filters, phred_scaled_quality, attributes
+                {vc6, vc7, Collections.<VariantContextAttributeEnum>emptySet(), Collections.<String>emptyList(),
                         new HashSet<>(Arrays.asList(GenotypeAttributeEnum.GQ)), Collections.<String>emptyList(),
-                        new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE)),
-                        Collections.<String>emptySet()}
+                        new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE, VariantContextAttributeEnum.CONTIG, VariantContextAttributeEnum.START,
+                                VariantContextAttributeEnum.END, VariantContextAttributeEnum.GENOTYPES, VariantContextAttributeEnum.ID, VariantContextAttributeEnum.ALLELES,
+                                VariantContextAttributeEnum.FILTERS, VariantContextAttributeEnum.PHRED_SCALED_QUALITY, VariantContextAttributeEnum.ATTRIBUTES)),
+                        new HashSet<>(Arrays.asList("string", "string2"))},
+                //Ignore all the differences except attributes
+                {vc6, vc7, new HashSet<>(Arrays.asList(VariantContextAttributeEnum.SOURCE, VariantContextAttributeEnum.CONTIG, VariantContextAttributeEnum.START,
+                        VariantContextAttributeEnum.END, VariantContextAttributeEnum.GENOTYPES, VariantContextAttributeEnum.ID, VariantContextAttributeEnum.ALLELES,
+                        VariantContextAttributeEnum.FILTERS, VariantContextAttributeEnum.PHRED_SCALED_QUALITY)), Collections.<String>emptyList(),
+                        new HashSet<>(Arrays.asList(GenotypeAttributeEnum.GQ)), Collections.<String>emptyList(),
+                        new HashSet<>(Arrays.asList(VariantContextAttributeEnum.ATTRIBUTES)),
+                        new HashSet<>(Arrays.asList("string", "string2"))}
         };
     }
 
@@ -2433,12 +2450,14 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
     }
 
     @DataProvider(name = "testGenotypeNotEqualsDataProvider")
-    Object[][] testGenotypeEqualsDataProvider(){
+    Object[][] testGenotypeNotEqualsDataProvider(){
         Genotype g1 = new GenotypeBuilder("g1", Arrays.asList(Aref, T, C)).make();
         Genotype g2 = new GenotypeBuilder("g2", Arrays.asList(Aref, T)).make();
         Genotype g3 = new GenotypeBuilder("g3", Arrays.asList(Aref, T)).phased(true).make();
         Genotype g4 = new GenotypeBuilder("g4", Arrays.asList(Aref, T, C)).attribute("string", "test").attribute("list", Arrays.asList(1, 2, 3)).make();
         Genotype g5 = new GenotypeBuilder("g5", Arrays.asList(Aref, T, C)).attribute("string", "test2").attribute("list", "1,2,3").make();
+        Genotype g6 = new GenotypeBuilder("g6", Arrays.asList(Gref, C, A)).AD(new int[]{1, 2, 3}).DP(1).GQ(1).PL(new int[]{1, 2, 3}).filter("test").make();
+        Genotype g7 = new GenotypeBuilder("g7", Arrays.asList(Gref, C, A)).AD(new int[]{3, 2, 3}).DP(2).GQ(2).PL(new int[]{3, 2, 3}).filter("test2").make();
 
         return new Object[][]{
                 //Sample name, ploidy, and alleles don't match (so genotype string also doesn't match)
@@ -2456,7 +2475,17 @@ public final class GATKVariantContextUtilsUnitTest extends GATKBaseTest {
                 //String attributes mismatch, list matching comma-separated string list
                 {g4, g5, Collections.<GenotypeAttributeEnum>emptySet(), Collections.<String>emptyList(),
                         new HashSet<>(Arrays.asList(GenotypeAttributeEnum.SAMPLE_NAME, GenotypeAttributeEnum.EXTENDED_ATTRIBUTES)),
-                        new HashSet<>(Arrays.asList("string"))}
+                        new HashSet<>(Arrays.asList("string"))},
+                //Default vals for DP and GQ and no values for AD,PL,filter vs set values for those fields
+                {g1, g6, new HashSet<>(Arrays.asList(GenotypeAttributeEnum.ALLELES, GenotypeAttributeEnum.GENOTYPE_STRING, GenotypeAttributeEnum.SAMPLE_NAME)), Collections.<String>emptyList(),
+                        new HashSet<>(Arrays.asList(GenotypeAttributeEnum.AD, GenotypeAttributeEnum.DP, GenotypeAttributeEnum.GQ, GenotypeAttributeEnum.PL,
+                                GenotypeAttributeEnum.FILTERS, GenotypeAttributeEnum.LIKELIHOODS)),
+                        Collections.<String>emptySet()},
+                //Different vals for DP,GQ,AD,PL,filter
+                {g6, g7, new HashSet<>(Arrays.asList(GenotypeAttributeEnum.ALLELES, GenotypeAttributeEnum.GENOTYPE_STRING, GenotypeAttributeEnum.SAMPLE_NAME)), Collections.<String>emptyList(),
+                        new HashSet<>(Arrays.asList(GenotypeAttributeEnum.AD, GenotypeAttributeEnum.DP, GenotypeAttributeEnum.GQ, GenotypeAttributeEnum.PL,
+                                GenotypeAttributeEnum.FILTERS, GenotypeAttributeEnum.LIKELIHOODS)),
+                        Collections.<String>emptySet()}
 
         };
     }

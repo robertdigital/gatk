@@ -376,43 +376,24 @@ public abstract class BaseTest {
         if ( Double.isNaN(expected) && Double.isNaN(actual) ) {
             return true;
         }
-        else {
-            if ( Double.isNaN(actual) ) {
-                logger.error( "Actual value is NaN and expected is not!" );
-                return false;
-            }
-            else if ( Double.isNaN(expected) ) {
-                logger.error( "Expected value is NaN and actual is not!" );
-                return false;
-            }
+        else if(Double.isNaN(actual) || Double.isNaN(expected)){
+            return false;
         }
 
         // Check for Infinity:
         if ( Double.isInfinite(expected) && Double.isInfinite(actual) ) {
             return true;
         }
-        else {
-            if ( Double.isInfinite(actual) ) {
-                logger.error( "Actual value is infinite and expected is not!" );
-                return false;
-            }
-            else if ( Double.isInfinite(expected) ) {
-                logger.error( "Expected value is infinite and actual is not!" );
-                return false;
-            }
+        else if(Double.isInfinite(actual) || Double.isInfinite(expected)){
+            return false;
         }
 
-        // Calculate copmparisons:
+        // Calculate comparisons:
         final double delta = Math.abs(actual - expected);
         final double ratio = Math.abs(actual / expected - 1.0);
 
         // Evaluate vs epsilon tolerance:
         final boolean passed = delta < tolerance || ratio < tolerance;
-        if (!passed) {
-            logger.error("expected = " + expected + " actual = " + actual
-                    + " not within tolerance " + tolerance
-                    + (message == null ? "" : "message: " + message));
-        }
         return passed;
     }
 

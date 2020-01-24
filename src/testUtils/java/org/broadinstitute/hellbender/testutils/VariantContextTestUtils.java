@@ -385,7 +385,7 @@ public final class VariantContextTestUtils {
     }
 
     @SuppressWarnings("unchecked")
-    static List<String> checkAttributesEquals(final Map<String, Object> actual, final Map<String, Object> expected) {
+    static List<String> checkAttributesEquals(final Map<String, Object> actual, final Map<String, Object> expected, final boolean ignoreActualExtraAttributes) {
         final Set<String> expectedKeys = new LinkedHashSet<>(expected.keySet());
         final List<String> errorKeys = new LinkedList<>();
 
@@ -436,6 +436,10 @@ public final class VariantContextTestUtils {
                         errorKeys.add(act.getKey());
                     }
                 }
+            }
+            //Don't add keys that are in actual but not expected to error keys if specified
+            else if(!ignoreActualExtraAttributes){
+                errorKeys.add(act.getKey());
             }
             expectedKeys.remove(act.getKey());
         }

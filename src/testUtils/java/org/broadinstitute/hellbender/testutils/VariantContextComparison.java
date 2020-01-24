@@ -15,6 +15,7 @@ public class VariantContextComparison {
     private List<String> extendedAttributesToIgnore;
     private Set<GenotypeAttributeEnum> genotypeAttributesToIgnore;
     private List<String> genotypeExtendedAttributesToIgnore;
+    private boolean ignoreActualExtraAttributes;
 
     private VariantContextComparisonResults results;
 
@@ -25,6 +26,7 @@ public class VariantContextComparison {
         private final List<String> variantContextExtendedAttributesToIgnore = new LinkedList<>();
         private final Set<GenotypeAttributeEnum> genotypeAttributesToIgnore = new HashSet<>();
         private final List<String> genotypeExtendedAttributesToIgnore = new LinkedList<>();
+        private boolean ignoreActualExtraAttributes = false;
 
         public Builder(VariantContext actual, VariantContext expected){
             this.actual = actual;
@@ -79,6 +81,12 @@ public class VariantContextComparison {
             return this;
         }
 
+        public Builder ignoreActualExtraAttributes(){
+            this.ignoreActualExtraAttributes = true;
+
+            return this;
+        }
+
         public VariantContextComparison build(){
             VariantContextComparison comparison = new VariantContextComparison();
             comparison.actual = this.actual;
@@ -87,6 +95,7 @@ public class VariantContextComparison {
             comparison.extendedAttributesToIgnore = this.variantContextExtendedAttributesToIgnore;
             comparison.genotypeAttributesToIgnore = this.genotypeAttributesToIgnore;
             comparison.genotypeExtendedAttributesToIgnore = this.genotypeExtendedAttributesToIgnore;
+            comparison.ignoreActualExtraAttributes = this.ignoreActualExtraAttributes;
 
             return comparison;
         }
@@ -158,7 +167,8 @@ public class VariantContextComparison {
                 if(attribute == VariantContextAttributeEnum.ATTRIBUTES){
                     List<String> errorKeys = VariantContextTestUtils.checkAttributesEquals(
                             VariantContextTestUtils.filterIgnoredAttributes(actual.getAttributes(), extendedAttributesToIgnore),
-                            VariantContextTestUtils.filterIgnoredAttributes(expected.getAttributes(), extendedAttributesToIgnore)
+                            VariantContextTestUtils.filterIgnoredAttributes(expected.getAttributes(), extendedAttributesToIgnore),
+                            ignoreActualExtraAttributes
                     );
                     if(!errorKeys.isEmpty()){
                         results.addMismatchedAttribute(VariantContextAttributeEnum.ATTRIBUTES);
